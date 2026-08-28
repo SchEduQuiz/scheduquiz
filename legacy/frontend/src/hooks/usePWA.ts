@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
+```tsx
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 interface PWAState {
   isInstallable: boolean;
@@ -6,6 +7,14 @@ interface PWAState {
   isOnline: boolean;
   showUpdatePrompt: boolean;
   isUpdateAvailable: boolean;
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
 }
 
 interface PWAHookReturn extends PWAState {
@@ -24,47 +33,107 @@ export const usePWA = (): PWAHookReturn => {
     isUpdateAvailable: false,
   });
 
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+
+  const [registration, setRegistration] =
+    useState<ServiceWorkerRegistration | null>(null);
+
+  // Prevent duplicate controllerchange handling
+  const controllerChangeHandled = useRef(false);
+
+  // Prevent duplicate SW registration/listeners
+  const registrationStarted = useRef(false);
 
   // Check if app is installed
   const checkIfInstalled = useCallback(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isInWebAppiOS = (window.navigator as any).standalone === true;
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches;
+
+    const isInWebAppiOS =
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
     const isInstalled = isStandalone || isInWebAppiOS;
-    
-    setState(prev => ({ ...prev, isInstalled }));
-    
+
+    setState((prev) => ({
+      ...prev,
+      isInstalled,
+    }));
+
     return isInstalled;
   }, []);
 
-  // Check for install prompt
-  const checkInstallPrompt = useCallback(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
+  // Listen for install prompt
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event: Event) => {
+      const e = event as BeforeInstallPromptEvent;
+
       e.preventDefault();
+
       setDeferredPrompt(e);
-      setState(prev => ({ ...prev, isInstallable: true }));
+
+      setState((prev) => ({
+        ...prev,
+        isInstallable: true,
+      }));
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    const handleAppInstalled = () => {
+      console.log('EduQuiz app installed');
+
+      setDeferredPrompt(null);
+
+      setState((prev) => ({
+        ...prev,
+        isInstalled: true,
+        isInstallable: false,
+      }));
+    };
+
+    window.addEventListener(
+      'beforeinstallprompt',
+      handleBeforeInstallPrompt
+    );
+
+    window.addEventListener(
+      'appinstalled',
+      handleAppInstalled
+    );
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt
+      );
+
+      window.removeEventListener(
+        'appinstalled',
+        handleAppInstalled
+      );
     };
   }, []);
 
   // Install app
   const installApp = useCallback(async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      console.warn('Install prompt is not available');
+      return;
+    }
 
     try {
-      const result = await deferredPrompt.prompt();
-      console.log('Install prompt result:', result);
-      
-      if (result.outcome === 'accepted') {
-        setState(prev => ({ ...prev, isInstalled: true, isInstallable: false }));
+      await deferredPrompt.prompt();
+
+      const { outcome } = await deferredPrompt.userChoice;
+
+      console.log('Install prompt result:', outcome);
+
+      if (outcome === 'accepted') {
+        setState((prev) => ({
+          ...prev,
+          isInstallable: false,
+        }));
       }
-      
+
       setDeferredPrompt(null);
     } catch (error) {
       console.error('Error installing app:', error);
@@ -73,83 +142,143 @@ export const usePWA = (): PWAHookReturn => {
 
   // Network status
   const handleOnline = useCallback(() => {
-    setState(prev => ({ ...prev, isOnline: true }));
+    setState((prev) => ({
+      ...prev,
+      isOnline: true,
+    }));
   }, []);
 
   const handleOffline = useCallback(() => {
-    setState(prev => ({ ...prev, isOnline: false }));
+    setState((prev) => ({
+      ...prev,
+      isOnline: false,
+    }));
   }, []);
 
   // Service Worker registration
   const registerServiceWorker = useCallback(async () => {
-    if ('serviceWorker' in navigator) {
-      try {
-        const reg = await navigator.serviceWorker.register('/sw.js', {
-          scope: '/'
-        });
-        
-        setRegistration(reg);
-        console.log('Service Worker registered:', reg);
+    if (!('serviceWorker' in navigator)) {
+      console.warn('Service workers are not supported');
+      return;
+    }
 
-        // Check for updates
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                setState(prev => ({ 
-                  ...prev, 
-                  showUpdatePrompt: true, 
-                  isUpdateAvailable: true 
-                }));
-              }
-            });
+    // Prevent duplicate registration in React StrictMode
+    if (registrationStarted.current) {
+      return;
+    }
+
+    registrationStarted.current = true;
+
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+      });
+
+      setRegistration(reg);
+
+      console.log('Service Worker registered:', reg);
+
+      // Check if an update is already waiting
+      if (reg.waiting) {
+        setState((prev) => ({
+          ...prev,
+          showUpdatePrompt: true,
+          isUpdateAvailable: true,
+        }));
+      }
+
+      // Listen for new service worker
+      const handleUpdateFound = () => {
+        const newWorker = reg.installing;
+
+        if (!newWorker) {
+          return;
+        }
+
+        newWorker.addEventListener('statechange', () => {
+          if (
+            newWorker.state === 'installed' &&
+            navigator.serviceWorker.controller
+          ) {
+            setState((prev) => ({
+              ...prev,
+              showUpdatePrompt: true,
+              isUpdateAvailable: true,
+            }));
           }
         });
+      };
 
-        // Listen for controller change
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
+      reg.addEventListener('updatefound', handleUpdateFound);
+
+      // Reload once when new worker takes control
+      if (!controllerChangeHandled.current) {
+        controllerChangeHandled.current = true;
+
+        const handleControllerChange = () => {
           window.location.reload();
-        });
+        };
 
-      } catch (error) {
-        console.error('Service Worker registration failed:', error);
+        navigator.serviceWorker.addEventListener(
+          'controllerchange',
+          handleControllerChange
+        );
       }
+    } catch (error) {
+      registrationStarted.current = false;
+
+      console.error(
+        'Service Worker registration failed:',
+        error
+      );
     }
   }, []);
 
   // Update app
   const updateApp = useCallback(() => {
-    if (registration?.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      setState(prev => ({ ...prev, showUpdatePrompt: false, isUpdateAvailable: false }));
+    if (!registration?.waiting) {
+      console.warn('No waiting service worker found');
+      return;
     }
+
+    registration.waiting.postMessage({
+      type: 'SKIP_WAITING',
+    });
+
+    setState((prev) => ({
+      ...prev,
+      showUpdatePrompt: false,
+      isUpdateAvailable: false,
+    }));
   }, [registration]);
 
   // Dismiss update
   const dismissUpdate = useCallback(() => {
-    setState(prev => ({ ...prev, showUpdatePrompt: false }));
+    setState((prev) => ({
+      ...prev,
+      showUpdatePrompt: false,
+    }));
   }, []);
 
+  // Initialize PWA
   useEffect(() => {
-    // Initialize PWA state
     checkIfInstalled();
-    
-    // Set up listeners
-    const cleanupInstallPrompt = checkInstallPrompt();
-    
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Register service worker
     registerServiceWorker();
 
     return () => {
-      cleanupInstallPrompt();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [checkIfInstalled, checkInstallPrompt, handleOnline, handleOffline, registerServiceWorker]);
+  }, [
+    checkIfInstalled,
+    handleOnline,
+    handleOffline,
+    registerServiceWorker,
+  ]);
 
   return {
     ...state,
@@ -161,3 +290,4 @@ export const usePWA = (): PWAHookReturn => {
 };
 
 export default usePWA;
+```
