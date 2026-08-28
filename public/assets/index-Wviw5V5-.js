@@ -3797,8 +3797,8 @@ var $e = reactExports.forwardRef(function(e, t) {
     })) : null;
   }));
 });
-const supabaseUrl = "https://wfolyzksvsfvshxxcjhs.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmb2x5emtzdnNmdnNoeHhjamhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMDExMjUsImV4cCI6MjA3Nzc3NzEyNX0.tjkCBczOnejg7xnb8NLdd_6VtpD1h-ACbnhOERG5jfQ";
+const supabaseUrl = "https://sabhsoclgsumkuwsiqfu.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const AuthContext = reactExports.createContext(void 0);
 function AuthProvider({
@@ -11482,11 +11482,11 @@ function QuizPage() {
         throw new Error("Failed to get authentication session. Please log in again.");
       }
       const quizId = getQuizIdForCategory(category || "science");
-      const response = await fetch(`${"https://wfolyzksvsfvshxxcjhs.supabase.co"}/functions/v1/quiz-service/start?quiz_id=${quizId}&questions=15`, {
+      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/quiz-service/start?quiz_id=${quizId}&questions=15`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
-          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmb2x5emtzdnNmdnNoeHhjamhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMDExMjUsImV4cCI6MjA3Nzc3NzEyNX0.tjkCBczOnejg7xnb8NLdd_6VtpD1h-ACbnhOERG5jfQ"
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE"
         }
       });
       if (!response.ok) {
@@ -11555,11 +11555,11 @@ function QuizPage() {
         error: sessionError
       } = await supabase.auth.getSession();
       if (sessionError || !session) return;
-      const response = await fetch(`${"https://wfolyzksvsfvshxxcjhs.supabase.co"}/functions/v1/quiz-service/questions/${question2.id}/hint`, {
+      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/quiz-service/questions/${question2.id}/hint`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
-          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmb2x5emtzdnNmdnNoeHhjamhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMDExMjUsImV4cCI6MjA3Nzc3NzEyNX0.tjkCBczOnejg7xnb8NLdd_6VtpD1h-ACbnhOERG5jfQ"
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE"
         }
       });
       if (response.ok) {
@@ -11710,11 +11710,11 @@ function QuizPage() {
         user_answer: answer,
         response_time: questionTimes[parseInt(questionId)] || 0
       }));
-      const response = await fetch(`${"https://wfolyzksvsfvshxxcjhs.supabase.co"}/functions/v1/quiz-service/${quizSession.id}/submit`, {
+      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/quiz-service/${quizSession.id}/submit`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
-          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmb2x5emtzdnNmdnNoeHhjamhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMDExMjUsImV4cCI6MjA3Nzc3NzEyNX0.tjkCBczOnejg7xnb8NLdd_6VtpD1h-ACbnhOERG5jfQ",
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE",
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -11752,11 +11752,11 @@ function QuizPage() {
             data: profile
           } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
           try {
-            const gamificationResponse = await fetch(`${"https://wfolyzksvsfvshxxcjhs.supabase.co"}/functions/v1/quiz-gamification-processor`, {
+            const gamificationResponse = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/quiz-gamification-processor`, {
               method: "POST",
               headers: {
                 "Authorization": `Bearer ${session.access_token}`,
-                "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmb2x5emtzdnNmdnNoeHhjamhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMDExMjUsImV4cCI6MjA3Nzc3NzEyNX0.tjkCBczOnejg7xnb8NLdd_6VtpD1h-ACbnhOERG5jfQ",
+                "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE",
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({
@@ -12262,11 +12262,11 @@ function LessonQuiz() {
       if (sessionError || !session) {
         throw new Error("Failed to get authentication session");
       }
-      const response = await fetch(`${"https://wfolyzksvsfvshxxcjhs.supabase.co"}/functions/v1/lesson-quiz-service/${quizId}`, {
+      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/lesson-quiz-service/${quizId}`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
-          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmb2x5emtzdnNmdnNoeHhjamhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMDExMjUsImV4cCI6MjA3Nzc3NzEyNX0.tjkCBczOnejg7xnb8NLdd_6VtpD1h-ACbnhOERG5jfQ"
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE"
         }
       });
       if (!response.ok) {
@@ -12300,11 +12300,11 @@ function LessonQuiz() {
     if (!questions[currentQuestion] || hintRequested.has(currentQuestion)) return;
     try {
       const question2 = questions[currentQuestion];
-      const response = await fetch(`${"https://wfolyzksvsfvshxxcjhs.supabase.co"}/functions/v1/lesson-quiz-service/questions/${question2.id}/hint`, {
+      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/lesson-quiz-service/questions/${question2.id}/hint`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${(_a3 = (await supabase.auth.getSession()).data.session) == null ? void 0 : _a3.access_token}`,
-          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmb2x5emtzdnNmdnNoeHhjamhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMDExMjUsImV4cCI6MjA3Nzc3NzEyNX0.tjkCBczOnejg7xnb8NLdd_6VtpD1h-ACbnhOERG5jfQ"
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE"
         }
       });
       if (response.ok) {
@@ -12344,11 +12344,11 @@ function LessonQuiz() {
     if (!quiz || !user) return;
     setSubmitting(true);
     try {
-      const response = await fetch(`${"https://wfolyzksvsfvshxxcjhs.supabase.co"}/functions/v1/lesson-quiz-service/${quizId}/submit`, {
+      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/lesson-quiz-service/${quizId}/submit`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${(_a3 = (await supabase.auth.getSession()).data.session) == null ? void 0 : _a3.access_token}`,
-          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmb2x5emtzdnNmdnNoeHhjamhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMDExMjUsImV4cCI6MjA3Nzc3NzEyNX0.tjkCBczOnejg7xnb8NLdd_6VtpD1h-ACbnhOERG5jfQ",
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE",
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -15094,11 +15094,11 @@ function QuestionManager({
         }
       } = await supabase.auth.getSession();
       if (!session) throw new Error("No session");
-      const response = await fetch(`${"https://wfolyzksvsfvshxxcjhs.supabase.co"}/functions/v1/ai-question-generator`, {
+      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/ai-question-generator`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
-          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmb2x5emtzdnNmdnNoeHhjamhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMDExMjUsImV4cCI6MjA3Nzc3NzEyNX0.tjkCBczOnejg7xnb8NLdd_6VtpD1h-ACbnhOERG5jfQ",
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE",
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
