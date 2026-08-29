@@ -32,13 +32,15 @@ export const spaHead = (
     { property: "og:description", content: description },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },
-    { name: "theme-color", content: "#000000" },
+    { name: "theme-color", content: "#2563eb" },
+    { name: "mobile-web-app-capable", content: "yes" },
     { name: "apple-mobile-web-app-capable", content: "yes" },
     { name: "apple-mobile-web-app-title", content: "EduQuiz Platform" },
   ],
   links: [
     { rel: "stylesheet", href: ENTRY_STYLES },
     { rel: "manifest", href: "/manifest.json" },
+    { rel: "apple-touch-icon", href: "/icons/icon-192x192.png" },
     ...PRELOAD_CHUNKS.map((href) => ({ rel: "modulepreload", href })),
   ],
 });
