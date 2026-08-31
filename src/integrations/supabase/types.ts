@@ -44,6 +44,64 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_activity_logs: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          target_entity_type: string | null
+          target_question_id: string | null
+          target_user_id: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_entity_type?: string | null
+          target_question_id?: string | null
+          target_user_id?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_entity_type?: string | null
+          target_question_id?: string | null
+          target_user_id?: string | null
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_activity_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_activity_logs_target_question_id_fkey"
+            columns: ["target_question_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_activity_logs_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           content: string
@@ -1300,6 +1358,214 @@ export type Database = {
           },
         ]
       }
+      password_reset_logs: {
+        Row: {
+          action_description: string
+          action_type: string
+          admin_id: string | null
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          request_id: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_description: string
+          action_type: string
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          request_id: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_description?: string
+          action_type?: string
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          request_id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_reset_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "password_reset_logs_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "password_reset_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "password_reset_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      password_reset_requests: {
+        Row: {
+          admin_id: string | null
+          admin_notes: string | null
+          approved_at: string | null
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          reason: string | null
+          rejected_at: string | null
+          request_details: Json | null
+          status: string
+          temp_password: string | null
+          temp_password_expires_at: string | null
+          temp_password_used: boolean | null
+          temp_password_used_at: string | null
+          updated_at: string | null
+          user_agent: string | null
+          user_email: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          approved_at?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          reason?: string | null
+          rejected_at?: string | null
+          request_details?: Json | null
+          status?: string
+          temp_password?: string | null
+          temp_password_expires_at?: string | null
+          temp_password_used?: boolean | null
+          temp_password_used_at?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_email: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          approved_at?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          reason?: string | null
+          rejected_at?: string | null
+          request_details?: Json | null
+          status?: string
+          temp_password?: string | null
+          temp_password_expires_at?: string | null
+          temp_password_used?: boolean | null
+          temp_password_used_at?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_email?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_reset_requests_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "password_reset_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      password_reset_sessions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          ip_address: unknown
+          last_activity_at: string | null
+          login_count: number | null
+          new_password_hashed: string | null
+          old_password_hashed: string | null
+          password_change_required: boolean | null
+          password_changed_at: string | null
+          request_id: string
+          session_status: string
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: unknown
+          last_activity_at?: string | null
+          login_count?: number | null
+          new_password_hashed?: string | null
+          old_password_hashed?: string | null
+          password_change_required?: boolean | null
+          password_changed_at?: string | null
+          request_id: string
+          session_status?: string
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: unknown
+          last_activity_at?: string | null
+          login_count?: number | null
+          new_password_hashed?: string | null
+          old_password_hashed?: string | null
+          password_change_required?: boolean | null
+          password_changed_at?: string | null
+          request_id?: string
+          session_status?: string
+          session_token?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_reset_sessions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "password_reset_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "password_reset_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2265,6 +2531,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_reset_data: { Args: never; Returns: number }
+      generate_temporary_password: { Args: never; Returns: string }
+      get_password_reset_status: {
+        Args: { user_email: string }
+        Returns: {
+          admin_notes: string
+          created_at: string
+          id: string
+          status: string
+          temp_password: string
+          temp_password_expires_at: string
+          temp_password_used: boolean
+        }[]
+      }
+      log_password_reset_action: {
+        Args: {
+          p_action_description?: string
+          p_action_type?: string
+          p_admin_id?: string
+          p_ip_address?: unknown
+          p_metadata?: Json
+          p_request_id?: string
+          p_user_agent?: string
+          p_user_id?: string
+        }
+        Returns: string
+      }
       update_quiz_analytics: { Args: { quiz_uuid: string }; Returns: undefined }
     }
     Enums: {
