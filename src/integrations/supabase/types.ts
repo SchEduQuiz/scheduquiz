@@ -102,6 +102,234 @@ export type Database = {
           },
         ]
       }
+      ai_grading_results: {
+        Row: {
+          ai_confidence_score: number | null
+          ai_improvement_areas: Json | null
+          ai_model_version: string | null
+          ai_overall_score: number | null
+          ai_processing_time_ms: number | null
+          ai_specific_suggestions: Json | null
+          ai_summary_feedback: string | null
+          ai_total_possible: number | null
+          assignment_id: string
+          coherence_analysis: Json | null
+          coherence_feedback: string | null
+          coherence_score: number | null
+          content_evidence: Json | null
+          content_feedback: string | null
+          content_score: number | null
+          created_at: string | null
+          final_score: number | null
+          grammar_feedback: string | null
+          grammar_issues: Json | null
+          grammar_score: number | null
+          id: string
+          processing_timestamp: string | null
+          relevance_alignment: Json | null
+          relevance_feedback: string | null
+          relevance_score: number | null
+          submission_id: string
+          teacher_adjusted: boolean | null
+          teacher_approved: boolean | null
+          teacher_notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          ai_improvement_areas?: Json | null
+          ai_model_version?: string | null
+          ai_overall_score?: number | null
+          ai_processing_time_ms?: number | null
+          ai_specific_suggestions?: Json | null
+          ai_summary_feedback?: string | null
+          ai_total_possible?: number | null
+          assignment_id: string
+          coherence_analysis?: Json | null
+          coherence_feedback?: string | null
+          coherence_score?: number | null
+          content_evidence?: Json | null
+          content_feedback?: string | null
+          content_score?: number | null
+          created_at?: string | null
+          final_score?: number | null
+          grammar_feedback?: string | null
+          grammar_issues?: Json | null
+          grammar_score?: number | null
+          id?: string
+          processing_timestamp?: string | null
+          relevance_alignment?: Json | null
+          relevance_feedback?: string | null
+          relevance_score?: number | null
+          submission_id: string
+          teacher_adjusted?: boolean | null
+          teacher_approved?: boolean | null
+          teacher_notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          ai_improvement_areas?: Json | null
+          ai_model_version?: string | null
+          ai_overall_score?: number | null
+          ai_processing_time_ms?: number | null
+          ai_specific_suggestions?: Json | null
+          ai_summary_feedback?: string | null
+          ai_total_possible?: number | null
+          assignment_id?: string
+          coherence_analysis?: Json | null
+          coherence_feedback?: string | null
+          coherence_score?: number | null
+          content_evidence?: Json | null
+          content_feedback?: string | null
+          content_score?: number | null
+          created_at?: string | null
+          final_score?: number | null
+          grammar_feedback?: string | null
+          grammar_issues?: Json | null
+          grammar_score?: number | null
+          id?: string
+          processing_timestamp?: string | null
+          relevance_alignment?: Json | null
+          relevance_feedback?: string | null
+          relevance_score?: number | null
+          submission_id?: string
+          teacher_adjusted?: boolean | null
+          teacher_approved?: boolean | null
+          teacher_notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_grading_results_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_grading_results_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_grading_sessions: {
+        Row: {
+          ai_suggestions_accepted: Json | null
+          completed_at: string | null
+          created_at: string | null
+          final_approved_score: number | null
+          id: string
+          initial_ai_score: number | null
+          manual_adjustments: Json | null
+          score_adjustments: Json | null
+          session_duration_ms: number | null
+          started_at: string | null
+          submission_id: string
+          teacher_id: string
+        }
+        Insert: {
+          ai_suggestions_accepted?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          final_approved_score?: number | null
+          id?: string
+          initial_ai_score?: number | null
+          manual_adjustments?: Json | null
+          score_adjustments?: Json | null
+          session_duration_ms?: number | null
+          started_at?: string | null
+          submission_id: string
+          teacher_id: string
+        }
+        Update: {
+          ai_suggestions_accepted?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          final_approved_score?: number | null
+          id?: string
+          initial_ai_score?: number | null
+          manual_adjustments?: Json | null
+          score_adjustments?: Json | null
+          session_duration_ms?: number | null
+          started_at?: string | null
+          submission_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_grading_sessions_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_grading_sessions_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_pre_submit_feedback: {
+        Row: {
+          assignment_id: string
+          created_at: string | null
+          draft_text: string
+          feedback_generated_at: string | null
+          id: string
+          improvement_suggestions: Json | null
+          pre_check_feedback: Json | null
+          pre_check_score: number | null
+          student_id: string
+          word_count: number | null
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string | null
+          draft_text: string
+          feedback_generated_at?: string | null
+          id?: string
+          improvement_suggestions?: Json | null
+          pre_check_feedback?: Json | null
+          pre_check_score?: number | null
+          student_id: string
+          word_count?: number | null
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string | null
+          draft_text?: string
+          feedback_generated_at?: string | null
+          id?: string
+          improvement_suggestions?: Json | null
+          pre_check_feedback?: Json | null
+          pre_check_score?: number | null
+          student_id?: string
+          word_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_pre_submit_feedback_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_pre_submit_feedback_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           content: string
@@ -149,64 +377,91 @@ export type Database = {
       }
       assignments: {
         Row: {
+          ai_feedback_enabled: boolean | null
+          ai_model_config: Json | null
+          ai_rubric_config: Json | null
           allow_late_submissions: boolean | null
           allowed_file_types: string[] | null
           course_id: string
           created_at: string | null
           description: string | null
           due_date: string | null
+          enable_ai_pre_check: boolean | null
+          grading_approach: string | null
           id: string
           instructions: string | null
           is_published: boolean | null
           late_penalty_percentage: number | null
+          lesson_id: string | null
           max_file_size_mb: number | null
           max_points: number | null
           status: string | null
           submission_type: string | null
+          submission_type_enhanced: string | null
           teacher_id: string
           title: string
           updated_at: string | null
           weight: number | null
+          word_limit_max: number | null
+          word_limit_min: number | null
         }
         Insert: {
+          ai_feedback_enabled?: boolean | null
+          ai_model_config?: Json | null
+          ai_rubric_config?: Json | null
           allow_late_submissions?: boolean | null
           allowed_file_types?: string[] | null
           course_id: string
           created_at?: string | null
           description?: string | null
           due_date?: string | null
+          enable_ai_pre_check?: boolean | null
+          grading_approach?: string | null
           id?: string
           instructions?: string | null
           is_published?: boolean | null
           late_penalty_percentage?: number | null
+          lesson_id?: string | null
           max_file_size_mb?: number | null
           max_points?: number | null
           status?: string | null
           submission_type?: string | null
+          submission_type_enhanced?: string | null
           teacher_id: string
           title: string
           updated_at?: string | null
           weight?: number | null
+          word_limit_max?: number | null
+          word_limit_min?: number | null
         }
         Update: {
+          ai_feedback_enabled?: boolean | null
+          ai_model_config?: Json | null
+          ai_rubric_config?: Json | null
           allow_late_submissions?: boolean | null
           allowed_file_types?: string[] | null
           course_id?: string
           created_at?: string | null
           description?: string | null
           due_date?: string | null
+          enable_ai_pre_check?: boolean | null
+          grading_approach?: string | null
           id?: string
           instructions?: string | null
           is_published?: boolean | null
           late_penalty_percentage?: number | null
+          lesson_id?: string | null
           max_file_size_mb?: number | null
           max_points?: number | null
           status?: string | null
           submission_type?: string | null
+          submission_type_enhanced?: string | null
           teacher_id?: string
           title?: string
           updated_at?: string | null
           weight?: number | null
+          word_limit_max?: number | null
+          word_limit_min?: number | null
         }
         Relationships: [
           {
@@ -214,6 +469,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
           {
@@ -365,6 +627,47 @@ export type Database = {
           {
             foreignKeyName: "certificates_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_templates: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          teacher_id: string
+          template_content: string
+          template_name: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          teacher_id: string
+          template_content: string
+          template_name: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          teacher_id?: string
+          template_content?: string
+          template_name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_templates_teacher_id_fkey"
+            columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -669,6 +972,66 @@ export type Database = {
           },
         ]
       }
+      grade_analytics: {
+        Row: {
+          assignment_id: string | null
+          average_score: number | null
+          course_id: string
+          grade_distribution: Json | null
+          graded_count: number | null
+          highest_score: number | null
+          id: string
+          last_updated: string | null
+          lowest_score: number | null
+          median_score: number | null
+          pending_count: number | null
+          total_submissions: number | null
+        }
+        Insert: {
+          assignment_id?: string | null
+          average_score?: number | null
+          course_id: string
+          grade_distribution?: Json | null
+          graded_count?: number | null
+          highest_score?: number | null
+          id?: string
+          last_updated?: string | null
+          lowest_score?: number | null
+          median_score?: number | null
+          pending_count?: number | null
+          total_submissions?: number | null
+        }
+        Update: {
+          assignment_id?: string | null
+          average_score?: number | null
+          course_id?: string
+          grade_distribution?: Json | null
+          graded_count?: number | null
+          highest_score?: number | null
+          id?: string
+          last_updated?: string | null
+          lowest_score?: number | null
+          median_score?: number | null
+          pending_count?: number | null
+          total_submissions?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grade_analytics_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grade_analytics_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grade_categories: {
         Row: {
           assignment_id: string
@@ -713,6 +1076,57 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      grade_history: {
+        Row: {
+          change_reason: string | null
+          changed_at: string | null
+          grade_id: string
+          id: string
+          new_feedback: string | null
+          new_points: number | null
+          previous_feedback: string | null
+          previous_points: number | null
+          teacher_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string | null
+          grade_id: string
+          id?: string
+          new_feedback?: string | null
+          new_points?: number | null
+          previous_feedback?: string | null
+          previous_points?: number | null
+          teacher_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string | null
+          grade_id?: string
+          id?: string
+          new_feedback?: string | null
+          new_points?: number | null
+          previous_feedback?: string | null
+          previous_points?: number | null
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grade_history_grade_id_fkey"
+            columns: ["grade_id"]
+            isOneToOne: false
+            referencedRelation: "grades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grade_history_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -790,6 +1204,57 @@ export type Database = {
           },
         ]
       }
+      grading_rubrics: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_template: boolean | null
+          name: string
+          teacher_id: string
+          total_points: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_template?: boolean | null
+          name: string
+          teacher_id: string
+          total_points?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_template?: boolean | null
+          name?: string
+          teacher_id?: string
+          total_points?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grading_rubrics_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grading_rubrics_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       learning_achievements: {
         Row: {
           badge_icon: string | null
@@ -819,6 +1284,56 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      lesson_content_analysis: {
+        Row: {
+          content_hash: string | null
+          content_summary: string | null
+          difficulty_level: string | null
+          id: string
+          key_concepts: Json | null
+          learning_objectives: Json | null
+          lesson_id: string
+          processed_at: string | null
+          processing_model: string | null
+          subject_area: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content_hash?: string | null
+          content_summary?: string | null
+          difficulty_level?: string | null
+          id?: string
+          key_concepts?: Json | null
+          learning_objectives?: Json | null
+          lesson_id: string
+          processed_at?: string | null
+          processing_model?: string | null
+          subject_area?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content_hash?: string | null
+          content_summary?: string | null
+          difficulty_level?: string | null
+          id?: string
+          key_concepts?: Json | null
+          learning_objectives?: Json | null
+          lesson_id?: string
+          processed_at?: string | null
+          processing_model?: string | null
+          subject_area?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_content_analysis_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lesson_progress: {
         Row: {
@@ -2020,6 +2535,53 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rubric_criteria: {
+        Row: {
+          ai_evaluation_criteria: Json | null
+          ai_model_instructions: string | null
+          ai_weight_percentage: number | null
+          created_at: string | null
+          criterion_name: string
+          description: string | null
+          id: string
+          max_points: number
+          order_index: number | null
+          rubric_id: string
+        }
+        Insert: {
+          ai_evaluation_criteria?: Json | null
+          ai_model_instructions?: string | null
+          ai_weight_percentage?: number | null
+          created_at?: string | null
+          criterion_name: string
+          description?: string | null
+          id?: string
+          max_points: number
+          order_index?: number | null
+          rubric_id: string
+        }
+        Update: {
+          ai_evaluation_criteria?: Json | null
+          ai_model_instructions?: string | null
+          ai_weight_percentage?: number | null
+          created_at?: string | null
+          criterion_name?: string
+          description?: string | null
+          id?: string
+          max_points?: number
+          order_index?: number | null
+          rubric_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubric_criteria_rubric_id_fkey"
+            columns: ["rubric_id"]
+            isOneToOne: false
+            referencedRelation: "grading_rubrics"
             referencedColumns: ["id"]
           },
         ]
