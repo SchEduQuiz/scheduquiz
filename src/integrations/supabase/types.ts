@@ -3094,6 +3094,10 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_reset_data: { Args: never; Returns: number }
+      create_default_ai_rubric: {
+        Args: { assignment_id: string }
+        Returns: Json
+      }
       generate_temporary_password: { Args: never; Returns: string }
       get_password_reset_status: {
         Args: { user_email: string }
@@ -3120,6 +3124,7 @@ export type Database = {
         }
         Returns: string
       }
+      process_lesson_content: { Args: { lesson_uuid: string }; Returns: string }
       update_quiz_analytics: { Args: { quiz_uuid: string }; Returns: undefined }
     }
     Enums: {
