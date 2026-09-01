@@ -1,4 +1,4 @@
-const CACHE_NAME = "eduquiz-v1";
+const CACHE_NAME = "eduquiz-v1.0.2";
 
 self.addEventListener("install", () => {
 self.skipWaiting();
