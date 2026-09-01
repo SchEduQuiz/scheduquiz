@@ -1,5 +1,5 @@
 // Service Worker for EduQuiz Platform PWA
-const CACHE_NAME = 'eduquiz-v1.0.0';
+const CACHE_NAME = 'eduquiz-v1.0.2';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',

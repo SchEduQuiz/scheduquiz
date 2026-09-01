@@ -1,3 +1,4 @@
+const __edgeUnavailable=(..._a)=>Promise.reject(new Error("Edge function not deployed"));
 var __defProp = Object.defineProperty;
 var __typeError = (msg) => {
   throw TypeError(msg);
@@ -18826,7 +18827,7 @@ function AdminDashboard() {
       const {
         data,
         error: error2
-      } = await supabase.functions.invoke("get-course-stats");
+      } = await __edgeUnavailable("get-course-stats");
       if (error2) throw error2;
       if (data == null ? void 0 : data.data) {
         setStats(data.data);
@@ -18867,7 +18868,7 @@ function AdminDashboard() {
         }
       } = await supabase.auth.getSession();
       if (!session) return;
-      const response = await supabase.functions.invoke("analytics-engine", {
+      const response = await __edgeUnavailable("analytics-engine", {
         body: {
           type: "admin_overview"
         }
@@ -18918,7 +18919,7 @@ function AdminDashboard() {
       healthChecks.database = "error";
     }
     try {
-      await supabase.functions.invoke("get-course-stats");
+      await __edgeUnavailable("get-course-stats");
       healthChecks.edgeFunctions = "healthy";
     } catch {
       healthChecks.edgeFunctions = "limited";
@@ -19357,7 +19358,7 @@ function AdminDashboardTester() {
       const {
         data,
         error
-      } = await supabase.functions.invoke("get-course-stats");
+      } = await __edgeUnavailable("get-course-stats");
       if (error) throw error;
       if (!(data == null ? void 0 : data.data)) throw new Error("No statistics data returned");
       const stats = data.data;
@@ -19370,7 +19371,7 @@ function AdminDashboardTester() {
       const {
         data,
         error
-      } = await supabase.functions.invoke("analytics-engine", {
+      } = await __edgeUnavailable("analytics-engine", {
         body: {
           type: "admin_overview"
         }
@@ -19427,7 +19428,7 @@ function AdminDashboardTester() {
         throw new Error("Database connection failed");
       }
       try {
-        await supabase.functions.invoke("get-course-stats");
+        await __edgeUnavailable("get-course-stats");
         checks.push("Edge Functions: OK");
       } catch (err) {
         checks.push("Edge Functions: Limited (expected in dev)");
