@@ -2090,6 +2090,7 @@ export type Database = {
           full_name: string | null
           id: string
           role: string | null
+          status: string
           updated_at: string | null
         }
         Insert: {
@@ -2100,6 +2101,7 @@ export type Database = {
           full_name?: string | null
           id: string
           role?: string | null
+          status?: string
           updated_at?: string | null
         }
         Update: {
@@ -2110,6 +2112,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           role?: string | null
+          status?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -3111,6 +3114,7 @@ export type Database = {
           temp_password_used: boolean
         }[]
       }
+      has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       log_password_reset_action: {
         Args: {
           p_action_description?: string
