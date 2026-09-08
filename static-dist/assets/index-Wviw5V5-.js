@@ -11493,7 +11493,7 @@ function QuizPage() {
         throw new Error("Failed to get authentication session. Please log in again.");
       }
       const quizId = getQuizIdForCategory(category || "science");
-      const response = await fetch(`${"https://scheduquiz.lovable.app"}/api/public/quiz-engine/start?quiz_id=${quizId}&questions=15`, {
+      const response = await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-engine/start?quiz_id=${quizId}&questions=15`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
@@ -11566,7 +11566,7 @@ function QuizPage() {
         error: sessionError
       } = await supabase.auth.getSession();
       if (sessionError || !session) return;
-      const response = await fetch(`${"https://scheduquiz.lovable.app"}/api/public/quiz-engine/questions/${question2.id}/hint`, {
+      const response = await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-engine/questions/${question2.id}/hint`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
@@ -11721,7 +11721,7 @@ function QuizPage() {
         user_answer: answer,
         response_time: questionTimes[parseInt(questionId)] || 0
       }));
-      const response = await fetch(`${"https://scheduquiz.lovable.app"}/api/public/quiz-engine/${quizSession.id}/submit`, {
+      const response = await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-engine/${quizSession.id}/submit`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
@@ -11763,7 +11763,7 @@ function QuizPage() {
             data: profile
           } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
           try {
-            const gamificationResponse = await fetch(`${"https://scheduquiz.lovable.app"}/api/public/quiz-gamification`, {
+            const gamificationResponse = await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-gamification`, {
               method: "POST",
               headers: {
                 "Authorization": `Bearer ${session.access_token}`,
