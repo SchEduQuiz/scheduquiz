@@ -189,9 +189,8 @@ async function handleSubmit(quizId: number, request: Request, userId: string, db
     .in('id', allowedIds.length ? allowedIds : [-1]);
   if (questionsError) return fail(questionsError.message, 500);
 
-  const byId = new Map(
-    (questions ?? []).map((q) => [Number((q as Record<string, unknown>)['id']), q as Record<string, unknown>]),
-  );
+  const questionRows = (questions ?? []) as Array<Record<string, unknown>>;
+  const byId = new Map(questionRows.map((q) => [Number(q['id']), q]));
   const answerById = new Map(answers.map((a) => [Number(a.question_id), a]));
 
   let score = 0;
