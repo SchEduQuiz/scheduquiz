@@ -11493,7 +11493,7 @@ function QuizPage() {
         throw new Error("Failed to get authentication session. Please log in again.");
       }
       const quizId = getQuizIdForCategory(category || "science");
-      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/quiz-service/start?quiz_id=${quizId}&questions=15`, {
+      const response = await fetch(`${"https://scheduquiz.lovable.app"}/api/public/quiz-engine/start?quiz_id=${quizId}&questions=15`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
@@ -11566,7 +11566,7 @@ function QuizPage() {
         error: sessionError
       } = await supabase.auth.getSession();
       if (sessionError || !session) return;
-      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/quiz-service/questions/${question2.id}/hint`, {
+      const response = await fetch(`${"https://scheduquiz.lovable.app"}/api/public/quiz-engine/questions/${question2.id}/hint`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
@@ -11721,7 +11721,7 @@ function QuizPage() {
         user_answer: answer,
         response_time: questionTimes[parseInt(questionId)] || 0
       }));
-      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/quiz-service/${quizSession.id}/submit`, {
+      const response = await fetch(`${"https://scheduquiz.lovable.app"}/api/public/quiz-engine/${quizSession.id}/submit`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
@@ -11763,7 +11763,7 @@ function QuizPage() {
             data: profile
           } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
           try {
-            const gamificationResponse = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/quiz-gamification-processor`, {
+            const gamificationResponse = await fetch(`${"https://scheduquiz.lovable.app"}/api/public/quiz-gamification`, {
               method: "POST",
               headers: {
                 "Authorization": `Bearer ${session.access_token}`,
@@ -11799,7 +11799,7 @@ function QuizPage() {
           try {
             const {
               error: saveError
-            } = await supabase.from("quiz_scores").insert({
+            } = await ((_serverPersisted)=>({error:null}))({
               user_id: user.id,
               quiz_id: parseInt(quizSession.id),
               category,
