@@ -29,7 +29,9 @@ const fail = (message: string, status = 400) => json({ error: { message } }, sta
 
 const HINT_PENALTY = 5;
 
-type AnyClient = ReturnType<typeof createClient>;
+// The challenge_* tables are newer than the generated types, so query loosely.
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type AnyClient = { from: (table: string) => any };
 
 async function authenticate(request: Request) {
   const token = (request.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
