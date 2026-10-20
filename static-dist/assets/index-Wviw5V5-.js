@@ -1,14 +1,7 @@
 const __edgeUnavailable=(..._a)=>Promise.reject(new Error("Edge function not deployed"));const __edgeLocal=async function(name,opts){const SB=(window.__SB_URL||"https://sabhsoclgsumkuwsiqfu.supabase.co");let key=window.__SB_KEY||"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE";let tok="";try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sb-.*-auth-token$/.test(k)){const v=JSON.parse(localStorage.getItem(k)||"{}");if(v&&v.access_token)tok=v.access_token}}}catch(e){}const H={apikey:key,Authorization:"Bearer "+(tok||key),"Content-Type":"application/json"};const cnt=async function(t){try{const r=await fetch(SB+"/rest/v1/"+t+"?select=id",{headers:Object.assign({},H,{Prefer:"count=exact",Range:"0-0"})});const cr=r.headers.get("content-range")||"";const n=parseInt((cr.split("/")[1]||"0"),10);return isNaN(n)?0:n}catch(e){return 0}};const roles=async function(){try{const r=await fetch(SB+"/rest/v1/profiles?select=role&limit=1000",{headers:H});const d=await r.json();return Array.isArray(d)?d:[]}catch(e){return[]}};const rs=await roles();const by=function(x){return rs.filter(function(u){return u.role===x}).length};const courses=await cnt("courses");const enrollments=await cnt("enrollments");const base={totalUsers:rs.length,totalStudents:by("student"),totalTeachers:by("teacher"),totalAdmins:by("admin"),totalCourses:courses,totalEnrollments:enrollments};if(name==="analytics-engine"){return{data:{data:Object.assign({},base,{usersByRole:{student:base.totalStudents,teacher:base.totalTeachers,admin:base.totalAdmins}})},error:null}}return{data:{data:base},error:null}};(function(){if(typeof window==="undefined"||window.__eqShim)return;window.__eqShim=1;const TABLES=["lesson_questions","questions","lesson_quizzes","quizzes"];const of=window.fetch.bind(window);const J=(b,s)=>new Response(JSON.stringify(b),{status:s||200,headers:{"Content-Type":"application/json"}});window.fetch=async function(input,init){try{const url=typeof input==="string"?input:(input&&input.url)||"";if(url.indexOf("/functions/v1/admin-question-management")===-1)return of(input,init);const req=typeof input==="string"?new Request(input,init):input;const h=new Headers(req.headers);const base=url.split("/functions/v1/")[0]+"/rest/v1/";const rh={apikey:h.get("apikey")||"",Authorization:h.get("Authorization")||"","Content-Type":"application/json"};const rest=(p,o)=>of(base+p,Object.assign({headers:rh},o||{}));const body=await req.clone().json().catch(()=>({}));const action=body.action,tableName=body.tableName,questionId=body.questionId,updates=body.updates||{},filters=body.filters||{};const limit=filters.limit||50,offset=filters.offset||0;let result;const q=(t)=>{let s=t+"?select=*";if(filters.category)s+="&category=eq."+encodeURIComponent(filters.category);if(filters.question_type)s+="&question_type=eq."+encodeURIComponent(filters.question_type);if(filters.quiz_id)s+="&quiz_id=eq."+filters.quiz_id;if(filters.lesson_id)s+="&lesson_id=eq."+filters.lesson_id;return s+"&order=created_at.desc&limit="+limit+"&offset="+offset};switch(action){case"get_questions":{if(tableName&&TABLES.indexOf(tableName)>-1){const r=await rest(q(tableName));result=await r.json()}else{const rs=await Promise.all(TABLES.map(t=>rest(q(t)).then(r=>r.json()).catch(()=>[])));result=TABLES.map((t,i)=>({table:t,questions:Array.isArray(rs[i])?rs[i]:[]}))}break}case"create_question":{const r=await rest(tableName,{method:"POST",headers:Object.assign({},rh,{Prefer:"return=representation"}),body:JSON.stringify(Object.assign({},updates,{created_at:new Date().toISOString(),updated_at:new Date().toISOString()}))});const d=await r.json();if(!r.ok)return J({error:{message:d.message||"Failed to create question"}},400);result=d;break}case"update_question":{const r=await rest(tableName+"?id=eq."+questionId,{method:"PATCH",headers:Object.assign({},rh,{Prefer:"return=representation"}),body:JSON.stringify(Object.assign({},updates,{updated_at:new Date().toISOString()}))});const d=await r.json();if(!r.ok)return J({error:{message:d.message||"Failed to update question"}},400);result=d;break}case"delete_question":{const r=await rest(tableName+"?id=eq."+questionId,{method:"DELETE"});if(!r.ok)return J({error:{message:"Failed to delete question"}},400);result={success:true,message:"Question deleted successfully"};break}case"bulk_delete_questions":{const ids=(updates&&updates.questionIds)||[];const res=[];for(const id of ids){try{const r=await rest(tableName+"?id=eq."+id,{method:"DELETE"});res.push({questionId:id,success:r.ok})}catch(e){res.push({questionId:id,success:false,error:String(e)})}}result={results:res};break}case"duplicate_question":{const r0=await rest(tableName+"?id=eq."+questionId);const rows=await r0.json();if(!Array.isArray(rows)||!rows.length)return J({error:{message:"Question not found"}},404);const o=Object.assign({},rows[0]);delete o.id;delete o.created_at;delete o.updated_at;if(o.question_text)o.question_text=o.question_text+" (Copy)";if(o.title)o.title=o.title+" (Copy)";const r=await rest(tableName,{method:"POST",headers:Object.assign({},rh,{Prefer:"return=representation"}),body:JSON.stringify(o)});const d=await r.json();if(!r.ok)return J({error:{message:d.message||"Failed to duplicate question"}},400);result=d;break}case"get_question_stats":{const rs=await Promise.all(TABLES.map(t=>rest(t+"?select=*&limit=1000").then(r=>r.json()).catch(()=>[])));const stats={};TABLES.forEach((t,i)=>{stats[t]=Array.isArray(rs[i])?rs[i].length:0});result={counts:stats,total:Object.values(stats).reduce((a,b)=>a+b,0)};break}case"search_questions":{const term=encodeURIComponent(body.searchTerm||filters.search||"");const rs=await Promise.all(TABLES.map(t=>rest(t+"?select=*&limit="+limit).then(r=>r.json()).catch(()=>[])));result={};TABLES.forEach((t,i)=>{const rows=Array.isArray(rs[i])?rs[i]:[];result[t]=term?rows.filter(r=>JSON.stringify(r).toLowerCase().indexOf(decodeURIComponent(term).toLowerCase())>-1):rows});break}default:return J({error:{message:"Unknown action: "+action}},400)}return J({data:result})}catch(e){return J({error:{message:(e&&e.message)||"Shim error"}},500)}};})();
 (function(){if(typeof window==="undefined"||window.__eqUserShim)return;window.__eqUserShim=1;var of=window.fetch.bind(window);var J=function(b,s){return new Response(JSON.stringify(b),{status:s||200,headers:{"Content-Type":"application/json"}})};window.fetch=async function(input,init){try{var url=typeof input==="string"?input:(input&&input.url)||"";var isU=url.indexOf("/functions/v1/admin-manage-users")>-1;var isP=url.indexOf("/functions/v1/password-reset-request")>-1;if(!isU&&!isP)return of(input,init);var req=typeof input==="string"?new Request(input,init):input;var h=new Headers(req.headers);var origin=url.split("/functions/v1/")[0];var base=origin+"/rest/v1/";var apikey=h.get("apikey")||"";var rh={apikey:apikey,Authorization:h.get("Authorization")||("Bearer "+apikey),"Content-Type":"application/json"};var rest=function(p,o){return of(base+p,Object.assign({headers:rh},o||{}))};var body=await req.clone().json().catch(function(){return{}});
 if(isP){var r=await rest("password_reset_requests",{method:"POST",headers:Object.assign({},rh,{Prefer:"return=minimal"}),body:JSON.stringify({user_email:body.email,reason:body.reason||null,request_details:body.requestDetails||null,status:"pending"})});if(!r.ok){var e=await r.json().catch(function(){return{}});return J({error:{message:e.message||"Failed to submit password reset request"}},400)}return J({success:true,message:"Your password reset request has been submitted. An administrator will review it shortly."})}
-var action=body.action;var patch=function(id,upd){return rest("profiles?id=eq."+id,{method:"PATCH",headers:Object.assign({},rh,{Prefer:"return=representation"}),body:JSON.stringify(Object.assign({},upd,{updated_at:new Date().toISOString()}))})};var fail=async function(r,m){var e=await r.json().catch(function(){return{}});return J({error:{message:e.message||e.hint||m}},400)};
-switch(action){
-case"create_user":{var u=body.userData||{};var sr=await of(origin+"/auth/v1/signup",{method:"POST",headers:{apikey:apikey,"Content-Type":"application/json"},body:JSON.stringify({email:u.email,password:u.password,data:{full_name:u.full_name||"",role:u.role||"student"}})});var sd=await sr.json().catch(function(){return{}});if(!sr.ok)return J({error:{message:sd.msg||sd.error_description||sd.message||"Failed to create user"}},400);var nid=(sd.user&&sd.user.id)||sd.id;if(nid){await patch(nid,{full_name:u.full_name||"",role:u.role||"student",status:u.status||"active"}).catch(function(){})}return J({data:{user:{id:nid,email:u.email}},message:"User created successfully"})}
-case"update_user":{var r1=await patch(body.userId,body.updates||{});if(!r1.ok)return fail(r1,"Failed to update user");return J({data:await r1.json(),message:"User updated successfully"})}
-case"update_status":{var r2=await patch(body.userId,{status:body.status});if(!r2.ok)return fail(r2,"Failed to update status");return J({data:await r2.json(),message:"User status updated successfully"})}
-case"delete_user":{var me="";try{me=JSON.parse(atob((rh.Authorization||"").split(" ")[1].split(".")[1])).sub}catch(e){}if(me&&me===body.userId)return J({error:{message:"You cannot delete your own account"}},400);var r3=await patch(body.userId,{status:"deleted"});if(!r3.ok)return fail(r3,"Failed to delete user");return J({data:{success:true},message:"User account deactivated and marked as deleted"})}
-case"bulk_update":{var ids=body.userIds||[];var op=body.operation||{};var upd={};if(op.type==="update_role")upd.role=(op.data&&op.data.role)||"student";else if(op.type==="update_status")upd.status=(op.data&&op.data.status)||"active";else if(op.type==="delete"){var me2="";try{me2=JSON.parse(atob((rh.Authorization||"").split(" ")[1].split(".")[1])).sub}catch(e){}var out=[];for(var i=0;i<ids.length;i++){if(me2&&me2===ids[i]){out.push({userId:ids[i],success:false,error:"Cannot delete your own account"});continue}var rr=await patch(ids[i],{status:"deleted"});out.push({userId:ids[i],success:rr.ok})}return J({data:{results:out}})}else return J({error:{message:"Unsupported bulk operation"}},400);var res=[];for(var k=0;k<ids.length;k++){var rp=await patch(ids[k],upd);res.push({userId:ids[k],success:rp.ok})}return J({data:{results:res}})}
-default:return J({error:{message:"Unknown action: "+action}},400)}}catch(e){return J({error:{message:(e&&e.message)||"Shim error"}},500)}};})();
+return of(input,init)}catch(e){return J({error:{message:(e&&e.message)||"Request failed"}},500)}};})();
 var __defProp = Object.defineProperty;
 var __typeError = (msg) => {
   throw TypeError(msg);
@@ -29,6 +22,22 @@ var __privateWrapper = (obj, member, setter, getter) => ({
   }
 });
 var _provider, _providerCalled, _a, _focused, _cleanup, _setup, _b, _online, _cleanup2, _setup2, _c, _gcTimeout, _d, _initialState, _revertState, _cache, _client, _retryer, _defaultOptions, _abortSignalConsumed, _Query_instances, dispatch_fn, _e, _client2, _observers, _mutationCache, _retryer2, _Mutation_instances, dispatch_fn2, _f, _mutations, _scopes, _mutationId, _g, _queries, _h, _queryCache, _mutationCache2, _defaultOptions2, _queryDefaults, _mutationDefaults, _mountCount, _unsubscribeFocus, _unsubscribeOnline, _i;
+// Legacy static clients call the same authenticated account service as the host.
+(function () {
+  if (window.__eqAdminTransport) return;
+  window.__eqAdminTransport = true;
+  const original = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    const req = new Request(input, init);
+    const path = new URL(req.url).pathname;
+    let endpoint;
+    if (path.endsWith('/functions/v1/admin-manage-users')) endpoint = 'users';
+    if (path.includes('/functions/v1/password-reset-admin/')) endpoint = 'resets/' + path.split('/').pop();
+    if (!endpoint) return original(input, init);
+    const origin = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.hostname.endsWith('.lovable.app') ? location.origin : 'https://scheduquiz.lovable.app';
+    return original(new Request(origin + '/api/public/admin/' + endpoint, req));
+  };
+})();
 import { j as jsxRuntimeExports } from "./ui-DY79clDH.js";
 import { r as reactExports, R as React, v as vt, u as useLocation, L as Link, O as Outlet, a as useParams, b as useNavigate, c as useSearchParams, B as BrowserRouter, d as Routes, e as Route, N as Navigate } from "./router-CN5hptJQ.js";
 import { a as requireReactDom } from "./vendor-B1QZAsoL.js";
@@ -3285,11 +3294,9 @@ const usePWA = () => {
   const registerServiceWorker = reactExports.useCallback(async () => {
     if ("serviceWorker" in navigator) {
       try {
-        const reg = await navigator.serviceWorker.register("/sw.js", {
-          scope: "/"
-        });
+        const reg = await (window.__eqSWRegistration || (window.__eqSWRegistration = navigator.serviceWorker.register("/sw.js", { scope: "/" })));
         setRegistration(reg);
-        console.log("Service Worker registered:", reg);
+
         reg.addEventListener("updatefound", () => {
           const newWorker = reg.installing;
           if (newWorker) {
@@ -3875,28 +3882,6 @@ function AuthProvider({
     }
   }
   async function signIn(email, password) {
-    const resetStatus = await getPasswordResetStatusByEmail(email);
-    if (resetStatus) {
-      if (resetStatus.status === "pending") {
-        throw new Error("PENDING_RESET");
-      } else if (resetStatus.status === "rejected") {
-        throw new Error("REJECTED_RESET");
-      } else if (resetStatus.status === "approved" && !resetStatus.temp_password_used) {
-        const {
-          error: error2
-        } = await supabase.auth.signInWithPassword({
-          email,
-          password: resetStatus.temp_password
-        });
-        if (error2) {
-          if (error2.message.includes("Invalid login credentials")) {
-            throw new Error("INVALID_TEMP_PASSWORD");
-          }
-          throw error2;
-        }
-        return;
-      }
-    }
     const {
       error
     } = await supabase.auth.signInWithPassword({
@@ -17163,7 +17148,7 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, pagination]);
+  }, [filters, pagination.limit, pagination.offset]);
   reactExports.useEffect(() => {
     loadUsers();
   }, [loadUsers]);
@@ -17765,7 +17750,7 @@ const QuestionManagement = () => {
   });
   reactExports.useEffect(() => {
     loadQuestions();
-  }, [filters, pagination]);
+  }, [filters, pagination.limit, pagination.offset]);
   const loadQuestions = async () => {
     try {
       setLoading(true);
@@ -18743,14 +18728,14 @@ const AnalyticsDashboard = () => {
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between p-4 bg-green-50 rounded-lg", "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:474:14", "data-matrix-name": "div", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "474", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22flex%20items-center%20justify-between%20p-4%20bg-green-50%20rounded-lg%22%7D", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:475:16", "data-matrix-name": "div", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "475", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "div", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-medium text-green-800", "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:476:18", "data-matrix-name": "p", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "476", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "p", "data-component-content": "%7B%22className%22%3A%22font-medium%20text-green-800%22%7D", children: "Edge Functions" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-green-600", "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:477:18", "data-matrix-name": "p", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "477", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "p", "data-component-content": "%7B%22className%22%3A%22text-sm%20text-green-600%22%7D", children: "Operational" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-green-600", "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:477:18", "data-matrix-name": "p", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "477", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "p", "data-component-content": "%7B%22className%22%3A%22text-sm%20text-green-600%22%7D", children: "Not measured" })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { className: "h-6 w-6 text-green-600", "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:479:16", "data-matrix-name": "Zap", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "479", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "Zap", "data-component-content": "%7B%22className%22%3A%22h-6%20w-6%20text-green-600%22%7D" })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between p-4 bg-blue-50 rounded-lg", "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:481:14", "data-matrix-name": "div", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "481", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22flex%20items-center%20justify-between%20p-4%20bg-blue-50%20rounded-lg%22%7D", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:482:16", "data-matrix-name": "div", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "482", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "div", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-medium text-blue-800", "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:483:18", "data-matrix-name": "p", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "483", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "p", "data-component-content": "%7B%22className%22%3A%22font-medium%20text-blue-800%22%7D", children: "Storage" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-blue-600", "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:484:18", "data-matrix-name": "p", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "484", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "p", "data-component-content": "%7B%22className%22%3A%22text-sm%20text-blue-600%22%7D", children: "45% Used" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-blue-600", "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:484:18", "data-matrix-name": "p", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "484", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "p", "data-component-content": "%7B%22className%22%3A%22text-sm%20text-blue-600%22%7D", children: "Not measured" })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsx(Target, { className: "h-6 w-6 text-blue-600", "data-matrix-id": "src/components/admin/AnalyticsDashboard.tsx:486:16", "data-matrix-name": "Target", "data-component-path": "src/components/admin/AnalyticsDashboard.tsx", "data-component-line": "486", "data-component-file": "AnalyticsDashboard.tsx", "data-component-name": "Target", "data-component-content": "%7B%22className%22%3A%22h-6%20w-6%20text-blue-600%22%7D" })
           ] })
@@ -18954,14 +18939,8 @@ function AdminDashboard() {
       if (error2) throw error2;
       setPasswordResetRequests((data == null ? void 0 : data.data) || []);
     } catch (error2) {
-      console.warn("Password reset admin unavailable, showing sample data:", error2);
-      setPasswordResetRequests([{
-        id: "1",
-        user_email: "prince@gmail.com",
-        reason: "Forgot my password",
-        status: "pending",
-        created_at: (/* @__PURE__ */ new Date()).toISOString()
-      }]);
+      setPasswordResetRequests([]);
+      setError("Password reset requests could not be loaded. Please retry.");
     } finally {
       setPasswordResetLoading(false);
     }
@@ -18975,18 +18954,8 @@ function AdminDashboard() {
       if (error2) throw error2;
       setPasswordResetStats(data == null ? void 0 : data.data);
     } catch (error2) {
-      console.warn("Password reset stats unavailable:", error2);
-      setPasswordResetStats({
-        total_requests: 1,
-        status_breakdown: {
-          pending: 1,
-          approved: 0,
-          rejected: 0
-        },
-        recent_activity: {
-          lastWeek: 1
-        }
-      });
+      setPasswordResetStats(null);
+      setError("Password reset totals could not be loaded.");
     }
   };
   const approvePasswordReset = async (requestId, tempPassword) => {
@@ -19010,20 +18979,12 @@ function AdminDashboard() {
         });
         setShowTempPasswordModal(true);
       }
+      alert("Recovery email sent. The user can follow the link to set a new password.");
       await loadPasswordResetRequests();
       await loadPasswordResetStats();
       setAdminNotes("");
     } catch (error2) {
-      console.warn("Password reset approval unavailable:", error2);
-      setPasswordResetRequests((prev) => prev.map((req) => req.id === requestId ? {
-        ...req,
-        status: "approved"
-      } : req));
-      setTempPasswordData({
-        password: "TempPass123!",
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1e3).toISOString()
-      });
-      setShowTempPasswordModal(true);
+      setError("The reset was not approved. Please retry.");
     }
   };
   const rejectPasswordReset = async (requestId) => {
@@ -19045,11 +19006,7 @@ function AdminDashboard() {
       await loadPasswordResetStats();
       setAdminNotes("");
     } catch (error2) {
-      console.warn("Password reset rejection unavailable:", error2);
-      setPasswordResetRequests((prev) => prev.map((req) => req.id === requestId ? {
-        ...req,
-        status: "rejected"
-      } : req));
+      setError("The reset was not rejected. Please retry.");
     }
   };
   const handleSelectRequest = (requestId, selected) => {
@@ -19483,21 +19440,15 @@ function AdminDashboardTester() {
     }
   }, {
     name: "Profile Data Integrity",
-    description: "Verify profile data for test users",
+    description: "Verify the current administrator account",
     test: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from("profiles").select("id, full_name, email, role, created_at").eq("email", "emma@gmail.com");
-      if (error) throw error;
-      if (!data || data.length === 0) {
-        throw new Error("Emma admin profile not found");
-      }
-      const emma = data[0];
-      if (emma.role !== "admin") {
-        throw new Error(`Emma's role is '${emma.role}', expected 'admin'`);
-      }
-      return `Emma profile verified: ${emma.full_name} (${emma.email})`;
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Please sign in");
+      const { data, error } = await supabase.from("profiles").select("id,full_name,status").eq("id",auth.user.id).single();
+      if (error || !data) throw new Error("Profile not found");
+      const { data: admin, error: roleError } = await supabase.rpc("has_role",{_user_id:auth.user.id,_role:"admin"});
+      if (roleError || !admin || data.status !== "active") throw new Error("Active administrator access required");
+      return "Current administrator profile verified";
     }
   }];
   const runTests = async () => {
@@ -19657,7 +19608,7 @@ function AdminTestPage() {
         /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-semibold text-blue-900 mb-2", "data-matrix-id": "src/pages/AdminTestPage.tsx:35:12", "data-matrix-name": "h2", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "35", "data-component-file": "AdminTestPage.tsx", "data-component-name": "h2", "data-component-content": "%7B%22className%22%3A%22text-lg%20font-semibold%20text-blue-900%20mb-2%22%7D", children: "Testing Instructions" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { className: "text-blue-800 text-sm space-y-1", "data-matrix-id": "src/pages/AdminTestPage.tsx:36:12", "data-matrix-name": "ul", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "36", "data-component-file": "AdminTestPage.tsx", "data-component-name": "ul", "data-component-content": "%7B%22className%22%3A%22text-blue-800%20text-sm%20space-y-1%22%7D", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("li", { "data-matrix-id": "src/pages/AdminTestPage.tsx:37:14", "data-matrix-name": "li", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "37", "data-component-file": "AdminTestPage.tsx", "data-component-name": "li", children: "• This test suite will verify all admin dashboard functionality" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("li", { "data-matrix-id": "src/pages/AdminTestPage.tsx:38:14", "data-matrix-name": "li", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "38", "data-component-file": "AdminTestPage.tsx", "data-component-name": "li", children: "• Make sure you are logged in as an admin user (emma@gmail.com)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("li", { "data-matrix-id": "src/pages/AdminTestPage.tsx:38:14", "data-matrix-name": "li", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "38", "data-component-file": "AdminTestPage.tsx", "data-component-name": "li", children: "• Sign in with your administrator account" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("li", { "data-matrix-id": "src/pages/AdminTestPage.tsx:39:14", "data-matrix-name": "li", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "39", "data-component-file": "AdminTestPage.tsx", "data-component-name": "li", children: "• The tests check authentication, data loading, and system connectivity" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("li", { "data-matrix-id": "src/pages/AdminTestPage.tsx:40:14", "data-matrix-name": "li", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "40", "data-component-file": "AdminTestPage.tsx", "data-component-name": "li", children: "• Some tests may fail in development environment (edge functions, etc.)" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("li", { "data-matrix-id": "src/pages/AdminTestPage.tsx:41:14", "data-matrix-name": "li", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "41", "data-component-file": "AdminTestPage.tsx", "data-component-name": "li", children: '• Click "Run All Tests" to start the comprehensive test suite' })
@@ -19674,28 +19625,7 @@ function AdminTestPage() {
             /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => navigate("/admin/dashboard?tab=analytics"), className: "w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded", "data-matrix-id": "src/pages/AdminTestPage.tsx:71:16", "data-matrix-name": "button", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "71", "data-component-file": "AdminTestPage.tsx", "data-component-name": "button", "data-component-content": "%7B%22onClick%22%3A%22%5BArrowFunctionExpression%5D%22%2C%22className%22%3A%22w-full%20text-left%20px-3%20py-2%20text-sm%20text-gray-700%20hover%3Abg-gray-100%20rounded%22%7D", children: "Test Analytics" })
           ] })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 border border-gray-200 rounded-lg", "data-matrix-id": "src/pages/AdminTestPage.tsx:80:12", "data-matrix-name": "div", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "80", "data-component-file": "AdminTestPage.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22p-4%20border%20border-gray-200%20rounded-lg%22%7D", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-semibold text-gray-900 mb-2", "data-matrix-id": "src/pages/AdminTestPage.tsx:81:14", "data-matrix-name": "h3", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "81", "data-component-file": "AdminTestPage.tsx", "data-component-name": "h3", "data-component-content": "%7B%22className%22%3A%22font-semibold%20text-gray-900%20mb-2%22%7D", children: "Test Credentials" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-sm text-gray-700 space-y-1", "data-matrix-id": "src/pages/AdminTestPage.tsx:82:14", "data-matrix-name": "div", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "82", "data-component-file": "AdminTestPage.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22text-sm%20text-gray-700%20space-y-1%22%7D", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { "data-matrix-id": "src/pages/AdminTestPage.tsx:83:16", "data-matrix-name": "p", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "83", "data-component-file": "AdminTestPage.tsx", "data-component-name": "p", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { "data-matrix-id": "src/pages/AdminTestPage.tsx:83:19", "data-matrix-name": "strong", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "83", "data-component-file": "AdminTestPage.tsx", "data-component-name": "strong", children: "Admin:" }),
-              " emma@gmail.com"
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { "data-matrix-id": "src/pages/AdminTestPage.tsx:84:16", "data-matrix-name": "p", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "84", "data-component-file": "AdminTestPage.tsx", "data-component-name": "p", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { "data-matrix-id": "src/pages/AdminTestPage.tsx:84:19", "data-matrix-name": "strong", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "84", "data-component-file": "AdminTestPage.tsx", "data-component-name": "strong", children: "Password:" }),
-              " Atta2017"
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { "data-matrix-id": "src/pages/AdminTestPage.tsx:85:16", "data-matrix-name": "p", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "85", "data-component-file": "AdminTestPage.tsx", "data-component-name": "p", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { "data-matrix-id": "src/pages/AdminTestPage.tsx:85:19", "data-matrix-name": "strong", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "85", "data-component-file": "AdminTestPage.tsx", "data-component-name": "strong", children: "Student:" }),
-              " prince@gmail.com"
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { "data-matrix-id": "src/pages/AdminTestPage.tsx:86:16", "data-matrix-name": "p", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "86", "data-component-file": "AdminTestPage.tsx", "data-component-name": "p", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { "data-matrix-id": "src/pages/AdminTestPage.tsx:86:19", "data-matrix-name": "strong", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "86", "data-component-file": "AdminTestPage.tsx", "data-component-name": "strong", children: "Password:" }),
-              " Atta2017"
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-xs", "data-matrix-id": "src/pages/AdminTestPage.tsx:87:16", "data-matrix-name": "div", "data-component-path": "src/pages/AdminTestPage.tsx", "data-component-line": "87", "data-component-file": "AdminTestPage.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22mt-3%20p-2%20bg-yellow-50%20border%20border-yellow-200%20rounded%20text-yellow-800%20text-xs%22%7D", children: "Use these credentials to test the admin dashboard functionality" })
-          ] })
-        ] })
+        null
       ] })
     ] }) })
   ] });

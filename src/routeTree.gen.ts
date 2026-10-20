@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as ApiPublicAdminSplatRouteImport } from './routes/api/public/admin/$'
 import { Route as ApiPublicQuizEngineSplatRouteImport } from './routes/api/public/quiz-engine/$'
 import { Route as ApiPublicQuizGamificationIndexRouteImport } from './routes/api/public/quiz-gamification/index'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const SplatRoute = SplatRouteImport.update({
   id: '/$',
   path: '/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAdminSplatRoute = ApiPublicAdminSplatRouteImport.update({
+  id: '/api/public/admin/$',
+  path: '/api/public/admin/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicQuizEngineSplatRoute =
@@ -40,12 +46,14 @@ const ApiPublicQuizGamificationIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/api/public/admin/$': typeof ApiPublicAdminSplatRoute
   '/api/public/quiz-engine/$': typeof ApiPublicQuizEngineSplatRoute
   '/api/public/quiz-gamification/': typeof ApiPublicQuizGamificationIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/api/public/admin/$': typeof ApiPublicAdminSplatRoute
   '/api/public/quiz-engine/$': typeof ApiPublicQuizEngineSplatRoute
   '/api/public/quiz-gamification': typeof ApiPublicQuizGamificationIndexRoute
 }
@@ -53,19 +61,30 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/api/public/admin/$': typeof ApiPublicAdminSplatRoute
   '/api/public/quiz-engine/$': typeof ApiPublicQuizEngineSplatRoute
   '/api/public/quiz-gamification/': typeof ApiPublicQuizGamificationIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/$' | '/api/public/quiz-engine/$' | '/api/public/quiz-gamification/'
+    | '/'
+    | '/$'
+    | '/api/public/admin/$'
+    | '/api/public/quiz-engine/$'
+    | '/api/public/quiz-gamification/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/api/public/quiz-engine/$' | '/api/public/quiz-gamification'
+  to:
+    | '/'
+    | '/$'
+    | '/api/public/admin/$'
+    | '/api/public/quiz-engine/$'
+    | '/api/public/quiz-gamification'
   id:
     | '__root__'
     | '/'
     | '/$'
+    | '/api/public/admin/$'
     | '/api/public/quiz-engine/$'
     | '/api/public/quiz-gamification/'
   fileRoutesById: FileRoutesById
@@ -73,6 +92,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  ApiPublicAdminSplatRoute: typeof ApiPublicAdminSplatRoute
   ApiPublicQuizEngineSplatRoute: typeof ApiPublicQuizEngineSplatRoute
   ApiPublicQuizGamificationIndexRoute: typeof ApiPublicQuizGamificationIndexRoute
 }
@@ -91,6 +111,13 @@ declare module '@tanstack/react-router' {
       path: '/$'
       fullPath: '/$'
       preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/admin/$': {
+      id: '/api/public/admin/$'
+      path: '/api/public/admin/$'
+      fullPath: '/api/public/admin/$'
+      preLoaderRoute: typeof ApiPublicAdminSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/quiz-engine/$': {
@@ -113,6 +140,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  ApiPublicAdminSplatRoute: ApiPublicAdminSplatRoute,
   ApiPublicQuizEngineSplatRoute: ApiPublicQuizEngineSplatRoute,
   ApiPublicQuizGamificationIndexRoute: ApiPublicQuizGamificationIndexRoute,
 }

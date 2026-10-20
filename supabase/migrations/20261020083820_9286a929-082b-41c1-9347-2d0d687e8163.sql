@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS public.user_roles (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, role text not null, unique(user_id, role));
+GRANT SELECT ON public.user_roles TO authenticated;
+GRANT ALL ON public.user_roles TO service_role;
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Read own roles" ON public.user_roles;
+CREATE POLICY "Read own roles" ON public.user_roles FOR SELECT TO authenticated USING (user_id = auth.uid());
+INSERT INTO public.user_roles(user_id,role) SELECT p.id,p.role FROM public.profiles p JOIN auth.users a ON a.id=p.id WHERE p.role IN ('student','teacher','admin') ON CONFLICT DO NOTHING;
+CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid,_role text) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=_user_id AND role=_role) $$;
+REVOKE EXECUTE ON FUNCTION public.has_role(uuid,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid,text) TO authenticated,service_role;
+CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN INSERT INTO public.profiles(id,email,full_name,role) VALUES(NEW.id,NEW.email,COALESCE(NEW.raw_user_meta_data->>'full_name',''),'student') ON CONFLICT(id) DO NOTHING; INSERT INTO public.user_roles(user_id,role) VALUES(NEW.id,'student') ON CONFLICT DO NOTHING; RETURN NEW; END; $$;
+CREATE OR REPLACE FUNCTION public.guard_profile_privileges() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN IF auth.uid() IS NULL THEN RETURN NEW; END IF; IF NEW.role IS DISTINCT FROM OLD.role THEN RAISE EXCEPTION 'Roles can only be changed through administrator account management'; END IF; IF NEW.status IS DISTINCT FROM OLD.status AND NOT public.has_role(auth.uid(),'admin') THEN RAISE EXCEPTION 'Only administrators can change account status'; END IF; RETURN NEW; END; $$;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.guard_profile_privileges() FROM PUBLIC,anon,authenticated;
