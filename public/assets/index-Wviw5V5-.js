@@ -27,7 +27,7 @@ var _provider, _providerCalled, _a, _focused, _cleanup, _setup, _b, _online, _cl
   if (window.__eqAdminTransport) return;
   window.__eqAdminTransport = true;
   const original = window.fetch.bind(window);
-  window.fetch = function (input, init) {
+  window.fetch = async function (input, init) {
     const req = new Request(input, init);
     const path = new URL(req.url).pathname;
     let endpoint;
@@ -35,7 +35,11 @@ var _provider, _providerCalled, _a, _focused, _cleanup, _setup, _b, _online, _cl
     if (path.includes('/functions/v1/password-reset-admin/')) endpoint = 'resets/' + path.split('/').pop();
     if (!endpoint) return original(input, init);
     const origin = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.hostname.endsWith('.lovable.app') ? location.origin : 'https://scheduquiz.lovable.app';
-    return original(new Request(origin + '/api/public/admin/' + endpoint, req));
+    return original(origin + '/api/public/admin/' + endpoint, {
+      method: req.method,
+      headers: req.headers,
+      ...(req.method !== 'GET' && req.method !== 'HEAD' ? { body: await req.text() } : {}),
+    });
   };
 })();
 import { j as jsxRuntimeExports } from "./ui-DY79clDH.js";
@@ -18766,7 +18770,7 @@ function AdminDashboard() {
   const [activityLogs, setActivityLogs] = reactExports.useState([]);
   const [systemHealth, setSystemHealth] = reactExports.useState({
     database: "checking",
-    storage: "healthy",
+    storage: "not measured",
     edgeFunctions: "checking"
   });
   const [loading, setLoading] = reactExports.useState(true);
@@ -18913,7 +18917,7 @@ function AdminDashboard() {
     }
     try {
       await __edgeLocal("get-course-stats");
-      healthChecks.edgeFunctions = "healthy";
+      healthChecks.edgeFunctions = "not measured";
     } catch {
       healthChecks.edgeFunctions = "limited";
     }
@@ -19378,7 +19382,7 @@ function AdminDashboardTester() {
         if (error) throw error;
         return `Password reset system accessible (${((_a3 = data == null ? void 0 : data.data) == null ? void 0 : _a3.length) || 0} requests)`;
       } catch (err) {
-        return "Password reset admin functions not available (expected in dev environment)";
+        throw new Error("Password reset service is unavailable");
       }
     }
   }, {
@@ -19387,7 +19391,8 @@ function AdminDashboardTester() {
     test: async () => {
       const checks = [];
       try {
-        await supabase.from("profiles").select("count").limit(1);
+        const { error } = await supabase.from("profiles").select("id").limit(1);
+        if (error) throw error;
         checks.push("Database: OK");
       } catch (err) {
         throw new Error("Database connection failed");
@@ -19409,19 +19414,12 @@ function AdminDashboardTester() {
     }
   }, {
     name: "Bulk Operations Access",
-    description: "Test bulk operations interface",
+    description: "Test user and question access",
     test: async () => {
-      try {
-        const {
-          data: users
-        } = await supabase.from("profiles").select("id, role").limit(1);
-        const {
-          data: questions
-        } = await supabase.from("quiz_questions").select("id").limit(1);
-        return `User management: ${users ? "OK" : "Failed"}, Question management: ${questions ? "OK" : "Failed"}`;
-      } catch (err) {
-        return "Bulk operations components accessible";
-      }
+      const users = await supabase.from("profiles").select("id").limit(1);
+      const questions = await supabase.from("questions").select("id").limit(1);
+      if (users.error || questions.error) throw new Error("Bulk data access failed");
+      return "User and question data accessible";
     }
   }, {
     name: "Message System Integration",
