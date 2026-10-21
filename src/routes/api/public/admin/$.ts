@@ -68,7 +68,13 @@ async function handle(request: Request) {
       const removed = await db.from('user_roles').delete().eq('user_id', id).neq('role', fields.role);
       check(removed.error);
     }
-    check((await db.from('profiles').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id)).error);
+    check((await db.from('profiles').update({
+      ...(fields.email !== undefined ? { email: fields.email } : {}),
+      ...(fields.full_name !== undefined ? { full_name: fields.full_name } : {}),
+      ...(fields.role !== undefined ? { role: fields.role } : {}),
+      ...(fields.status !== undefined ? { status: fields.status } : {}),
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)).error);
     await audit('user_updated', id);
   };
   const remove = async (id: string) => {
