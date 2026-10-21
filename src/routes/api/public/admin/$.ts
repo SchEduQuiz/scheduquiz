@@ -17,7 +17,7 @@ const bodySchema = z.object({
   userIds: z.array(idSchema).min(1).max(100).optional(),
   userData: userFields.extend({ password: z.string().min(6).max(128) }).optional(),
   updates: userFields.partial().optional(),
-  status: statusSchema.optional(),
+  status: z.enum(['active', 'inactive', 'suspended', 'pending', 'approved', 'rejected']).optional(),
   operation: z.object({ type: z.enum(['update_role', 'update_status', 'delete']), data: z.object({ role: roleSchema.optional(), status: statusSchema.optional() }).optional() }).optional(),
   requestId: idSchema.optional(),
   adminNotes: z.string().max(2000).optional(),
@@ -51,7 +51,7 @@ async function handle(request: Request) {
     if (error) throw new Error('Account changed, but its activity log could not be saved');
   };
   const check = (error: { message: string } | null) => { if (error) throw new Error('The account change could not be saved'); };
-  const update = async (id: string, fields: { email?: string; full_name?: string; role?: string; status?: string }) => {
+  const update = async (id: string, fields: { email?: string | undefined; full_name?: string | undefined; role?: string | undefined; status?: string | undefined }) => {
     protectOwnAccount(caller, id, fields);
     const { data: old, error } = await db.from('profiles').select('id,role').eq('id', id).single();
     check(error);
@@ -68,7 +68,13 @@ async function handle(request: Request) {
       const removed = await db.from('user_roles').delete().eq('user_id', id).neq('role', fields.role);
       check(removed.error);
     }
-    check((await db.from('profiles').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id)).error);
+    check((await db.from('profiles').update({
+      ...(fields.email !== undefined ? { email: fields.email } : {}),
+      ...(fields.full_name !== undefined ? { full_name: fields.full_name } : {}),
+      ...(fields.role !== undefined ? { role: fields.role } : {}),
+      ...(fields.status !== undefined ? { status: fields.status } : {}),
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)).error);
     await audit('user_updated', id);
   };
   const remove = async (id: string) => {
@@ -94,7 +100,7 @@ async function handle(request: Request) {
           await update(body.userId, body.updates); break;
         case 'update_status':
           if (!body.userId || !body.status) throw new Error('Status required');
-          await update(body.userId, { status: body.status }); break;
+          await update(body.userId, { status: statusSchema.parse(body.status) }); break;
         case 'delete_user':
           if (!body.userId) throw new Error('User required');
           await remove(body.userId); break;

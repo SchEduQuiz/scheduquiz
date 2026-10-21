@@ -27,7 +27,7 @@ var _provider, _providerCalled, _a, _focused, _cleanup, _setup, _b, _online, _cl
   if (window.__eqAdminTransport) return;
   window.__eqAdminTransport = true;
   const original = window.fetch.bind(window);
-  window.fetch = function (input, init) {
+  window.fetch = async function (input, init) {
     const req = new Request(input, init);
     const path = new URL(req.url).pathname;
     let endpoint;
@@ -35,7 +35,11 @@ var _provider, _providerCalled, _a, _focused, _cleanup, _setup, _b, _online, _cl
     if (path.includes('/functions/v1/password-reset-admin/')) endpoint = 'resets/' + path.split('/').pop();
     if (!endpoint) return original(input, init);
     const origin = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.hostname.endsWith('.lovable.app') ? location.origin : 'https://scheduquiz.lovable.app';
-    return original(new Request(origin + '/api/public/admin/' + endpoint, req));
+    return original(origin + '/api/public/admin/' + endpoint, {
+      method: req.method,
+      headers: req.headers,
+      ...(req.method !== 'GET' && req.method !== 'HEAD' ? { body: await req.text() } : {}),
+    });
   };
 })();
 import { j as jsxRuntimeExports } from "./ui-DY79clDH.js";
@@ -13401,13 +13405,11 @@ function PasswordResetPage() {
       return;
     }
     try {
-      const result = await changePasswordAfterReset(newPassword, currentPassword, sessionToken);
-      if (!result.success) {
-        throw new Error(result.message);
-      }
+      const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+      if (passwordError) throw new Error("Password could not be updated. Please request a new recovery link.");
       setSuccess(true);
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/");
       }, 2e3);
     } catch (err) {
       setError(err.message || "Failed to update password");
@@ -13865,11 +13867,11 @@ function DashboardLayout({
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `transition-all duration-300 ease-in-out ${isDrawerOpen ? "ml-64" : "ml-0"}`, "data-matrix-id": "src/components/DashboardLayout.tsx:81:8", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "81", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22%5BTemplateLiteral%5D%22%7D", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-[calc(100vh-4rem)] overflow-y-auto", "data-matrix-id": "src/components/DashboardLayout.tsx:85:10", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "85", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22h-%5Bcalc(100vh-4rem)%5D%20overflow-y-auto%22%7D", children }) })
     ] }),
     isDrawerOpen && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity", onClick: (e) => {
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity lg:hidden", onClick: (e) => {
         e.stopPropagation();
         setIsDrawerOpen(false);
       }, "data-matrix-id": "src/components/DashboardLayout.tsx:95:10", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "95", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22fixed%20inset-0%20z-40%20bg-black%20bg-opacity-50%20transition-opacity%22%2C%22onClick%22%3A%22%5BArrowFunctionExpression%5D%22%7D" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out", "data-matrix-id": "src/components/DashboardLayout.tsx:104:10", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "104", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22fixed%20inset-y-0%20left-0%20z-50%20w-64%20transform%20transition-transform%20duration-300%20ease-in-out%22%7D", children: renderDrawer() })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:hidden", "data-matrix-id": "src/components/DashboardLayout.tsx:104:10", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "104", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22fixed%20inset-y-0%20left-0%20z-50%20w-64%20transform%20transition-transform%20duration-300%20ease-in-out%22%7D", children: renderDrawer() })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "lg:hidden", "data-matrix-id": "src/components/DashboardLayout.tsx:111:6", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "111", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22lg%3Ahidden%22%7D", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-[calc(100vh-4rem)] overflow-y-auto", "data-matrix-id": "src/components/DashboardLayout.tsx:112:8", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "112", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22h-%5Bcalc(100vh-4rem)%5D%20overflow-y-auto%22%7D", children }) })
   ] });
@@ -18768,7 +18770,7 @@ function AdminDashboard() {
   const [activityLogs, setActivityLogs] = reactExports.useState([]);
   const [systemHealth, setSystemHealth] = reactExports.useState({
     database: "checking",
-    storage: "healthy",
+    storage: "not measured",
     edgeFunctions: "checking"
   });
   const [loading, setLoading] = reactExports.useState(true);
@@ -18915,7 +18917,7 @@ function AdminDashboard() {
     }
     try {
       await __edgeLocal("get-course-stats");
-      healthChecks.edgeFunctions = "healthy";
+      healthChecks.edgeFunctions = "not measured";
     } catch {
       healthChecks.edgeFunctions = "limited";
     }
@@ -19380,7 +19382,7 @@ function AdminDashboardTester() {
         if (error) throw error;
         return `Password reset system accessible (${((_a3 = data == null ? void 0 : data.data) == null ? void 0 : _a3.length) || 0} requests)`;
       } catch (err) {
-        return "Password reset admin functions not available (expected in dev environment)";
+        throw new Error("Password reset service is unavailable");
       }
     }
   }, {
@@ -19389,7 +19391,8 @@ function AdminDashboardTester() {
     test: async () => {
       const checks = [];
       try {
-        await supabase.from("profiles").select("count").limit(1);
+        const { error } = await supabase.from("profiles").select("id").limit(1);
+        if (error) throw error;
         checks.push("Database: OK");
       } catch (err) {
         throw new Error("Database connection failed");
@@ -19411,19 +19414,12 @@ function AdminDashboardTester() {
     }
   }, {
     name: "Bulk Operations Access",
-    description: "Test bulk operations interface",
+    description: "Test user and question access",
     test: async () => {
-      try {
-        const {
-          data: users
-        } = await supabase.from("profiles").select("id, role").limit(1);
-        const {
-          data: questions
-        } = await supabase.from("quiz_questions").select("id").limit(1);
-        return `User management: ${users ? "OK" : "Failed"}, Question management: ${questions ? "OK" : "Failed"}`;
-      } catch (err) {
-        return "Bulk operations components accessible";
-      }
+      const users = await supabase.from("profiles").select("id").limit(1);
+      const questions = await supabase.from("questions").select("id").limit(1);
+      if (users.error || questions.error) throw new Error("Bulk data access failed");
+      return "User and question data accessible";
     }
   }, {
     name: "Message System Integration",

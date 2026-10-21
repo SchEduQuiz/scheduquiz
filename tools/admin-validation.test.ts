@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { protectOwnAccount, roleSchema, statusSchema } from './admin-validation';
+import { protectOwnAccount, roleSchema, statusSchema } from '../src/lib/admin-validation';
 
 test('administrators cannot delete their own account', () => {
   expect(() => protectOwnAccount('a', 'a', { deleting: true })).toThrow();
