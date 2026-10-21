@@ -17,7 +17,7 @@ const bodySchema = z.object({
   userIds: z.array(idSchema).min(1).max(100).optional(),
   userData: userFields.extend({ password: z.string().min(6).max(128) }).optional(),
   updates: userFields.partial().optional(),
-  status: statusSchema.optional(),
+  status: z.enum(['active', 'inactive', 'suspended', 'pending', 'approved', 'rejected']).optional(),
   operation: z.object({ type: z.enum(['update_role', 'update_status', 'delete']), data: z.object({ role: roleSchema.optional(), status: statusSchema.optional() }).optional() }).optional(),
   requestId: idSchema.optional(),
   adminNotes: z.string().max(2000).optional(),
@@ -100,7 +100,7 @@ async function handle(request: Request) {
           await update(body.userId, body.updates); break;
         case 'update_status':
           if (!body.userId || !body.status) throw new Error('Status required');
-          await update(body.userId, { status: body.status }); break;
+          await update(body.userId, { status: statusSchema.parse(body.status) }); break;
         case 'delete_user':
           if (!body.userId) throw new Error('User required');
           await remove(body.userId); break;
