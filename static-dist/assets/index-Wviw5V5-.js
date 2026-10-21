@@ -13401,13 +13401,11 @@ function PasswordResetPage() {
       return;
     }
     try {
-      const result = await changePasswordAfterReset(newPassword, currentPassword, sessionToken);
-      if (!result.success) {
-        throw new Error(result.message);
-      }
+      const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+      if (passwordError) throw new Error("Password could not be updated. Please request a new recovery link.");
       setSuccess(true);
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/");
       }, 2e3);
     } catch (err) {
       setError(err.message || "Failed to update password");
@@ -13865,11 +13863,11 @@ function DashboardLayout({
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `transition-all duration-300 ease-in-out ${isDrawerOpen ? "ml-64" : "ml-0"}`, "data-matrix-id": "src/components/DashboardLayout.tsx:81:8", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "81", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22%5BTemplateLiteral%5D%22%7D", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-[calc(100vh-4rem)] overflow-y-auto", "data-matrix-id": "src/components/DashboardLayout.tsx:85:10", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "85", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22h-%5Bcalc(100vh-4rem)%5D%20overflow-y-auto%22%7D", children }) })
     ] }),
     isDrawerOpen && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity", onClick: (e) => {
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity lg:hidden", onClick: (e) => {
         e.stopPropagation();
         setIsDrawerOpen(false);
       }, "data-matrix-id": "src/components/DashboardLayout.tsx:95:10", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "95", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22fixed%20inset-0%20z-40%20bg-black%20bg-opacity-50%20transition-opacity%22%2C%22onClick%22%3A%22%5BArrowFunctionExpression%5D%22%7D" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out", "data-matrix-id": "src/components/DashboardLayout.tsx:104:10", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "104", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22fixed%20inset-y-0%20left-0%20z-50%20w-64%20transform%20transition-transform%20duration-300%20ease-in-out%22%7D", children: renderDrawer() })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:hidden", "data-matrix-id": "src/components/DashboardLayout.tsx:104:10", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "104", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22fixed%20inset-y-0%20left-0%20z-50%20w-64%20transform%20transition-transform%20duration-300%20ease-in-out%22%7D", children: renderDrawer() })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "lg:hidden", "data-matrix-id": "src/components/DashboardLayout.tsx:111:6", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "111", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22lg%3Ahidden%22%7D", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-[calc(100vh-4rem)] overflow-y-auto", "data-matrix-id": "src/components/DashboardLayout.tsx:112:8", "data-matrix-name": "div", "data-component-path": "src/components/DashboardLayout.tsx", "data-component-line": "112", "data-component-file": "DashboardLayout.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22h-%5Bcalc(100vh-4rem)%5D%20overflow-y-auto%22%7D", children }) })
   ] });
