@@ -9,7 +9,7 @@ export const userFields = z.object({
   status: statusSchema,
 });
 
-export function protectOwnAccount(caller: string, target: string, change: { role?: string; status?: string; deleting?: boolean }) {
+export function protectOwnAccount(caller: string, target: string, change: { role?: string | undefined; status?: string | undefined; deleting?: boolean }) {
   if (caller === target && (change.deleting || (change.role && change.role !== 'admin') || (change.status && change.status !== 'active'))) {
     throw new Error('You cannot remove your own administrator access');
   }

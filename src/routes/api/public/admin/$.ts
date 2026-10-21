@@ -51,7 +51,7 @@ async function handle(request: Request) {
     if (error) throw new Error('Account changed, but its activity log could not be saved');
   };
   const check = (error: { message: string } | null) => { if (error) throw new Error('The account change could not be saved'); };
-  const update = async (id: string, fields: { email?: string; full_name?: string; role?: string; status?: string }) => {
+  const update = async (id: string, fields: z.infer<typeof userFields> extends infer _T ? { email?: string | undefined; full_name?: string | undefined; role?: string | undefined; status?: string | undefined } : never) => {
     protectOwnAccount(caller, id, fields);
     const { data: old, error } = await db.from('profiles').select('id,role').eq('id', id).single();
     check(error);
