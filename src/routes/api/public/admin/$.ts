@@ -40,7 +40,11 @@ async function handle(request: Request) {
   if (roleError || !admin) return json({ error: { message: 'Administrator access required' } }, 403);
   const { data: profile } = await client.from('profiles').select('status').eq('id', auth.user.id).single();
   if (profile?.status !== 'active') return json({ error: { message: 'Account is not active' } }, 403);
-  const parsed = bodySchema.safeParse(request.method === 'GET' ? {} : await request.json().catch(() => null));
+  // Read-only calls (list/stats) are sent as POST with no body by the client SDK.
+  const raw = request.method === 'GET' ? '' : await request.text();
+  let payload: unknown = {};
+  if (raw.trim()) { try { payload = JSON.parse(raw); } catch { payload = null; } }
+  const parsed = bodySchema.safeParse(payload ?? null);
   if (!parsed.success) return json({ error: { message: 'Invalid account request' } }, 400);
   const body = parsed.data;
   const endpoint = new URL(request.url).pathname.split('/api/public/admin/')[1];
