@@ -42,3 +42,16 @@ The root `vercel.json` deploys the prebuilt output with no install/build step:
 To rebuild from source instead, run `npm install && npm run build:prod:no-check`
 inside `legacy/frontend/` and copy `dist/` over `static-dist/` and
 `public/assets/`.
+
+## Authenticated services
+
+The static Vercel output does not execute TanStack server routes. Account
+management, password-reset administration and quiz services depend on the
+corresponding server routes being published on `https://scheduquiz.lovable.app`.
+The imported client forwards bearer-authenticated account requests there when
+running outside Lovable or localhost. Never replace these privileged operations
+with browser-side admin credentials or profile-only updates.
+
+Publish the Lovable server changes before checking those operations from Vercel.
+Cross-site production reachability and password recovery email delivery still
+require verification; local tests do not establish either.
