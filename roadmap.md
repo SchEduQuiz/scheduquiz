@@ -7,4 +7,6 @@
 - [ ] Verify user deletion and clean up the disposable audit account. Blocked: previous signed-in browser session was lost after environment continuation; external Supabase cannot mint a replacement.
 - [ ] Verify question mutations, reset approval/rejection, full analytics/log/test flows and message receipt. Blocked: no remaining authenticated test session.
 - [ ] Verify cross-site production admin service after publication. Blocked: current published service deployment is not verified.
-- [x] Report System Settings as unavailable rather than inventing settings behavior.
+- [x] Report System Settings as unavailable rather than inventing settings behavior.- [x] Quiz resume after refresh: progress saved server-side, restored on start (24h window).
+- [x] Fix empty-body admin reset stats/list 400 and message mark-as-read 406.
+- [ ] Publish so scheduquiz.lovable.app serves the fixed account and quiz services. Blocked: needs user to publish.
