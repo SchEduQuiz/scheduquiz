@@ -642,6 +642,8 @@ export type Database = {
           id: string
           max_score: number
           percentage: number
+          progress: Json
+          progress_updated_at: string | null
           question_ids: number[]
           quiz_id: number
           score: number
@@ -662,6 +664,8 @@ export type Database = {
           id?: string
           max_score?: number
           percentage?: number
+          progress?: Json
+          progress_updated_at?: string | null
           question_ids?: number[]
           quiz_id: number
           score?: number
@@ -682,6 +686,8 @@ export type Database = {
           id?: string
           max_score?: number
           percentage?: number
+          progress?: Json
+          progress_updated_at?: string | null
           question_ids?: number[]
           quiz_id?: number
           score?: number
