@@ -10,6 +10,7 @@
 // the client. Callers are authenticated with their Supabase bearer token.
 import { createFileRoute } from '@tanstack/react-router';
 import { createClient } from '@supabase/supabase-js';
+import { canResume, sanitizeProgress } from '@/lib/quiz-progress';
 
 const cors: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -64,6 +65,31 @@ async function handleStart(url: URL, userId: string, db: AnyClient) {
     .maybeSingle();
   if (quizError) return fail(quizError.message, 500);
   if (!quiz) return fail('Quiz not found', 404);
+
+  const QCOLS = 'id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation, hint, points, time_limit, difficulty';
+  // Resume an unfinished attempt (refresh / return later) unless ?fresh=1.
+  if (url.searchParams.get('fresh') !== '1') {
+    const { data: open } = await db
+      .from('challenge_attempts')
+      .select('id, session_id, question_ids, progress, started_at')
+      .eq('user_id', userId).eq('quiz_id', quizId).eq('status', 'in_progress')
+      .order('started_at', { ascending: false }).limit(1).maybeSingle();
+    if (open && canResume(open['started_at'] as string)) {
+      const ids = ((open['question_ids'] as number[]) ?? []).map(Number);
+      const { data: rows, error: rowsError } = await db.from('challenge_questions').select(QCOLS).in('id', ids.length ? ids : [-1]);
+      if (rowsError) return fail(rowsError.message, 500);
+      const byId = new Map(((rows ?? []) as Array<Record<string, unknown>>).map((r) => [Number(r['id']), r]));
+      const ordered = ids.map((id) => byId.get(id)).filter(Boolean) as Array<Record<string, unknown>>;
+      if (ordered.length) {
+        return json({ data: { success: true, data: {
+          session_id: open['session_id'], attempt_id: open['id'],
+          quiz: { id: quiz['id'], title: quiz['title'], category: quiz['category'] },
+          total_questions: ordered.length, questions: ordered,
+          resumed: true, progress: sanitizeProgress(open['progress'], ids),
+        } } });
+      }
+    }
+  }
 
   const { data: pool, error: poolError } = await db
     .from('challenge_questions')
@@ -290,6 +316,21 @@ async function handleSubmit(quizId: number, request: Request, userId: string, db
   });
 }
 
+async function handleProgress(quizId: number, request: Request, userId: string, db: AnyClient) {
+  if (!Number.isFinite(quizId)) return fail('Invalid quiz id');
+  const body = await request.json().catch(() => ({}));
+  const { data: attempt, error } = await db.from('challenge_attempts').select('id, question_ids')
+    .eq('user_id', userId).eq('quiz_id', quizId).eq('status', 'in_progress')
+    .order('started_at', { ascending: false }).limit(1).maybeSingle();
+  if (error) return fail(error.message, 500);
+  if (!attempt) return fail('No active quiz attempt found', 409);
+  const progress = sanitizeProgress(body, ((attempt['question_ids'] as number[]) ?? []).map(Number));
+  const { error: saveError } = await db.from('challenge_attempts')
+    .update({ progress, progress_updated_at: new Date().toISOString() }).eq('id', attempt['id'] as string);
+  if (saveError) return fail(saveError.message, 500);
+  return json({ data: { saved: true, progress } });
+}
+
 async function handle(request: Request, splat: string) {
   const segs = splat.split('/').filter(Boolean);
   const url = new URL(request.url);
@@ -302,6 +343,9 @@ async function handle(request: Request, splat: string) {
     if (request.method === 'GET' && segs[0] === 'start') return await handleStart(url, userId, db);
     if (request.method === 'GET' && segs[0] === 'questions' && segs[2] === 'hint') {
       return await handleHint(Number(segs[1]), userId, db);
+    }
+    if (request.method === 'POST' && segs[1] === 'progress') {
+      return await handleProgress(Number(segs[0]), request, userId, db);
     }
     if (request.method === 'POST' && segs[1] === 'submit') {
       return await handleSubmit(Number(segs[0]), request, userId, db);
