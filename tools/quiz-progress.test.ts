@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { canResume, sanitizeProgress } from '../src/lib/quiz-progress';
 
 describe('quiz progress', () => {
