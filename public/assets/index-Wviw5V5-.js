@@ -11456,6 +11456,21 @@ function QuizPage() {
       }
     }
   }, [selectedAnswer, showFeedback, isSubmitting, currentQuestion]);
+  reactExports.useEffect(() => {
+    if (!quizSession || quizResult) return;
+    const saveTimer = setTimeout(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-engine/${quizSession.id}/progress`, {
+          method: "POST", keepalive: true,
+          headers: { "Authorization": `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ answers: userAnswers, current_question: currentQuestion, hints: Array.from(hintRequested), elapsed_seconds: Math.floor((Date.now() - sessionStartTime) / 1e3) })
+        });
+      } catch (e) { console.warn("Quiz progress not saved", e); }
+    }, 400);
+    return () => clearTimeout(saveTimer);
+  }, [userAnswers, currentQuestion, hintRequested, quizSession == null ? void 0 : quizSession.id, quizResult]);
   const getQuizIdForCategory = (category2) => {
     const categoryMap = {
       "science": "6",
@@ -11532,10 +11547,18 @@ function QuizPage() {
         total_questions: transformedQuestions.length,
         hints_used: 0
       });
-      setCurrentQuestion(0);
-      setSessionStartTime(Date.now());
+      const savedProgress = result.data.data.resumed ? result.data.data.progress : null;
+      const resumeIndex = savedProgress ? Math.min(Object.keys(savedProgress.answers || {}).length, transformedQuestions.length - 1) : 0;
+      if (savedProgress) {
+        setUserAnswers(savedProgress.answers || {});
+        setHintRequested(new Set(savedProgress.hints || []));
+        setQuizSession((prev) => prev ? { ...prev, hints_used: (savedProgress.hints || []).length } : prev);
+        setCanNavigateBack(resumeIndex > 0);
+      }
+      setCurrentQuestion(resumeIndex);
+      setSessionStartTime(Date.now() - ((savedProgress == null ? void 0 : savedProgress.elapsed_seconds) || 0) * 1e3);
       setQuestionStartTime(Date.now());
-      setTimeLeft(((_c2 = transformedQuestions[0]) == null ? void 0 : _c2.time_limit) || 30);
+      setTimeLeft(((_c2 = transformedQuestions[resumeIndex]) == null ? void 0 : _c2.time_limit) || 30);
     } catch (err) {
       console.error("Error starting quiz:", err);
       setError(err instanceof Error ? err.message : "Failed to start quiz");

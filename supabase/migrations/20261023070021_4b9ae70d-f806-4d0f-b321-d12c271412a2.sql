@@ -1,0 +1,2 @@
+ALTER TABLE public.challenge_attempts ADD COLUMN IF NOT EXISTS progress jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE public.challenge_attempts ADD COLUMN IF NOT EXISTS progress_updated_at timestamptz;
