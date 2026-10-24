@@ -209,6 +209,12 @@ async function handleSubmit(quizId: number, request: Request, userId: string, db
     .maybeSingle();
   if (attemptError) return fail(attemptError.message, 500);
   if (!attempt) return fail('No active quiz attempt found. Please start the quiz again.', 409);
+  // Claim the attempt atomically so a duplicate submit cannot score it twice.
+  const { data: claimed, error: claimError } = await db.from('challenge_attempts')
+    .update({ status: 'completed', submitted_at: new Date().toISOString() })
+    .eq('id', attempt['id'] as string).eq('status', 'in_progress').select('id');
+  if (claimError) return fail(claimError.message, 500);
+  if (!claimed?.length) return fail('This quiz attempt has already been submitted.', 409);
 
   const allowedIds = ((attempt['question_ids'] as number[]) ?? []).map(Number);
   const { data: questions, error: questionsError } = await db
