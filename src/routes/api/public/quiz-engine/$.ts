@@ -352,29 +352,49 @@ async function handleGenerate(request: Request, userId: string, db: AnyClient) {
   const content = String(body['lesson_content'] ?? lesson['content'] ?? '').slice(0, 12000);
   const title = String(body['lesson_title'] ?? lesson['title'] ?? '').slice(0, 200);
 
-  const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  const item = { type: 'object', additionalProperties: false,
+    required: ['question_text', 'question_type', 'options', 'correct_answer', 'explanation', 'difficulty'],
+    properties: {
+      question_text: { type: 'string' }, question_type: { type: 'string', enum: QUESTION_TYPES },
+      options: { type: ['array', 'null'], items: { type: 'string' } }, correct_answer: { type: 'string' },
+      explanation: { type: 'string' }, difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] },
+    } };
+  const res = await fetch('https://ai.gateway.lovable.dev/v1/responses', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    headers: { 'Lovable-API-Key': apiKey, 'Content-Type': 'application/json', 'X-Lovable-AIG-SDK': 'fetch' },
     body: JSON.stringify({
-      model: 'google/gemini-3-flash-preview',
-      messages: [
-        { role: 'system', content: 'You write accurate quiz questions strictly based on the provided lesson. For multiple_choice give 4 options and set correct_answer to the exact text of the right option. For true_false use options ["True","False"].' },
-        { role: 'user', content: `Lesson: ${title}\n\n${content}\n\nWrite ${count} questions. Difficulty: ${difficulty}. Types: ${(types.length ? types : ['multiple_choice']).join(', ')}.` },
-      ],
-      tools: [{ type: 'function', function: { name: 'save_questions', parameters: { type: 'object', properties: { questions: { type: 'array', items: { type: 'object', properties: {
-        question_text: { type: 'string' }, question_type: { type: 'string', enum: QUESTION_TYPES }, options: { type: 'array', items: { type: 'string' } },
-        correct_answer: { type: 'string' }, explanation: { type: 'string' }, difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] },
-      }, required: ['question_text', 'question_type', 'correct_answer', 'difficulty'] } } }, required: ['questions'] } } }],
-      tool_choice: { type: 'function', function: { name: 'save_questions' } },
+      model: 'openai/gpt-6-astra', stream: true, store: false, reasoning: { effort: 'low' },
+      instructions: 'You write accurate quiz questions strictly based on the provided lesson. For multiple_choice give 4 options and set correct_answer to the exact text of the right option. For true_false use options ["True","False"]. For other types options is null.',
+      input: `Lesson: ${title}\n\n${content}\n\nWrite ${count} questions. Difficulty: ${difficulty}. Types: ${(types.length ? types : ['multiple_choice']).join(', ')}.`,
+      text: { format: { type: 'json_schema', name: 'lesson_questions', strict: true, schema: {
+        type: 'object', additionalProperties: false, required: ['questions'], properties: { questions: { type: 'array', items: item } } } } },
     }),
   });
   if (res.status === 429) return fail('Too many requests, please try again shortly', 429);
   if (res.status === 402) return fail('AI credits are exhausted for this workspace', 402);
-  if (!res.ok) return fail('Question generation failed', 502);
-  const ai = await res.json();
-  const args = ai?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+  if (!res.ok || !res.body) return fail('Question generation failed', 502);
+  // Collect the streamed JSON text from the server-sent events.
+  let text = '';
+  let buffer = '';
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      try {
+        const ev = JSON.parse(line.slice(5).trim());
+        if (ev.type === 'response.output_text.delta') text += ev.delta ?? '';
+        if (ev.type === 'response.failed' || ev.type === 'error') return fail('Question generation failed', 502);
+      } catch { /* ignore keep-alive lines */ }
+    }
+  }
   let parsed: { questions?: Array<Record<string, unknown>> } = {};
-  try { parsed = JSON.parse(args ?? '{}'); } catch { return fail('Question generation returned invalid data', 502); }
+  try { parsed = JSON.parse(text || '{}'); } catch { return fail('Question generation returned invalid data', 502); }
   const questions = (parsed.questions ?? []).slice(0, count).map((q) => ({
     question_text: String(q['question_text'] ?? ''),
     question_type: QUESTION_TYPES.includes(String(q['question_type'])) ? String(q['question_type']) : 'multiple_choice',
