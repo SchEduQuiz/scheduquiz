@@ -1709,6 +1709,7 @@ export type Database = {
           correct_answer: string
           correct_answers: string[] | null
           created_at: string | null
+          created_by: string | null
           difficulty: string | null
           explanation: string | null
           hint: string | null
@@ -1718,10 +1719,12 @@ export type Database = {
           option_b: string | null
           option_c: string | null
           option_d: string | null
+          options: Json | null
+          order_index: number
           points: number | null
           question_text: string
           question_type: string
-          quiz_id: string
+          quiz_id: string | null
           time_limit: number | null
         }
         Insert: {
@@ -1729,6 +1732,7 @@ export type Database = {
           correct_answer: string
           correct_answers?: string[] | null
           created_at?: string | null
+          created_by?: string | null
           difficulty?: string | null
           explanation?: string | null
           hint?: string | null
@@ -1738,10 +1742,12 @@ export type Database = {
           option_b?: string | null
           option_c?: string | null
           option_d?: string | null
+          options?: Json | null
+          order_index?: number
           points?: number | null
           question_text: string
           question_type: string
-          quiz_id: string
+          quiz_id?: string | null
           time_limit?: number | null
         }
         Update: {
@@ -1749,6 +1755,7 @@ export type Database = {
           correct_answer?: string
           correct_answers?: string[] | null
           created_at?: string | null
+          created_by?: string | null
           difficulty?: string | null
           explanation?: string | null
           hint?: string | null
@@ -1758,10 +1765,12 @@ export type Database = {
           option_b?: string | null
           option_c?: string | null
           option_d?: string | null
+          options?: Json | null
+          order_index?: number
           points?: number | null
           question_text?: string
           question_type?: string
-          quiz_id?: string
+          quiz_id?: string | null
           time_limit?: number | null
         }
         Relationships: [

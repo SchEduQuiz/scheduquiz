@@ -1,4 +1,4 @@
-const CACHE_NAME = "eduquiz-v1.0.8";
+const CACHE_NAME = "eduquiz-v1.0.9";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -25,7 +25,7 @@ self.addEventListener("fetch", (event) => {
 
   // Always get the latest HTML from the network.
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(() => caches.match("/")));
+    event.respondWith(fetch(request).catch(async () => (await caches.match("/")) || Response.error()));
     return;
   }
 
@@ -41,7 +41,7 @@ self.addEventListener("fetch", (event) => {
           cache.put(request, responseToCache);
         });
         return response;
-      });
+      }).catch(() => Response.error());
     })
   );
 });
