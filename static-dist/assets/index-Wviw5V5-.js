@@ -11714,9 +11714,11 @@ function QuizPage() {
       }, 5e3);
     }
   }, [createBalloons, createConfetti]);
+  const finishingRef = reactExports.useRef(false);
   const finishQuiz = async () => {
     var _a2;
-    if (!quizSession || !user) return;
+    if (!quizSession || !user || finishingRef.current) return;
+    finishingRef.current = true;
     try {
       const {
         data: {
@@ -15115,7 +15117,7 @@ function QuestionManager({
         }
       } = await supabase.auth.getSession();
       if (!session) throw new Error("No session");
-      const response = await fetch(`${"https://sabhsoclgsumkuwsiqfu.supabase.co"}/functions/v1/ai-question-generator`, {
+      const response = await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-engine/generate`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
