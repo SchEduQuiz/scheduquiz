@@ -3,6 +3,8 @@
 //   GET  /api/public/quiz-engine/start?quiz_id=<n>&questions=<n>
 //   GET  /api/public/quiz-engine/questions/<questionId>/hint
 //   POST /api/public/quiz-engine/<quizId>/submit  { answers, time_taken, hints_used_list }
+//   POST /api/public/quiz-engine/<quizId>/progress { answers, current_question, hints, elapsed_seconds }
+//   POST /api/public/quiz-engine/generate          { lesson_id, num_questions, difficulty, question_types } (course teacher/admin)
 //
 // Questions are read from public.challenge_questions and every attempt, answer
 // and score is persisted in public.challenge_attempts / challenge_responses.
@@ -331,6 +333,61 @@ async function handleProgress(quizId: number, request: Request, userId: string, 
   return json({ data: { saved: true, progress } });
 }
 
+const QUESTION_TYPES = ['multiple_choice', 'true_false', 'short_answer', 'fill_blank'];
+
+async function handleGenerate(request: Request, userId: string, db: AnyClient) {
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+  const lessonId = String(body['lesson_id'] ?? '');
+  if (!/^[0-9a-f-]{36}$/i.test(lessonId)) return fail('Invalid lesson');
+  const { data: lesson } = await db.from('lessons').select('id, title, content, courses(teacher_id)').eq('id', lessonId).maybeSingle();
+  if (!lesson) return fail('Lesson not found', 404);
+  const { data: adminRole } = await db.from('user_roles').select('role').eq('user_id', userId).eq('role', 'admin').maybeSingle();
+  if ((lesson['courses'] as { teacher_id?: string } | null)?.teacher_id !== userId && !adminRole) return fail('Only the course teacher can generate questions', 403);
+  const apiKey = process.env['LOVABLE_API_KEY'];
+  if (!apiKey) return fail('Question generation is not configured', 503);
+
+  const count = Math.min(Math.max(Number(body['num_questions']) || 10, 1), 20);
+  const difficulty = ['easy', 'medium', 'hard', 'mixed'].includes(String(body['difficulty'])) ? String(body['difficulty']) : 'mixed';
+  const types = (Array.isArray(body['question_types']) ? body['question_types'] : []).map(String).filter((t) => QUESTION_TYPES.includes(t));
+  const content = String(body['lesson_content'] ?? lesson['content'] ?? '').slice(0, 12000);
+  const title = String(body['lesson_title'] ?? lesson['title'] ?? '').slice(0, 200);
+
+  const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'google/gemini-3-flash-preview',
+      messages: [
+        { role: 'system', content: 'You write accurate quiz questions strictly based on the provided lesson. For multiple_choice give 4 options and set correct_answer to the exact text of the right option. For true_false use options ["True","False"].' },
+        { role: 'user', content: `Lesson: ${title}\n\n${content}\n\nWrite ${count} questions. Difficulty: ${difficulty}. Types: ${(types.length ? types : ['multiple_choice']).join(', ')}.` },
+      ],
+      tools: [{ type: 'function', function: { name: 'save_questions', parameters: { type: 'object', properties: { questions: { type: 'array', items: { type: 'object', properties: {
+        question_text: { type: 'string' }, question_type: { type: 'string', enum: QUESTION_TYPES }, options: { type: 'array', items: { type: 'string' } },
+        correct_answer: { type: 'string' }, explanation: { type: 'string' }, difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] },
+      }, required: ['question_text', 'question_type', 'correct_answer', 'difficulty'] } } }, required: ['questions'] } } }],
+      tool_choice: { type: 'function', function: { name: 'save_questions' } },
+    }),
+  });
+  if (res.status === 429) return fail('Too many requests, please try again shortly', 429);
+  if (res.status === 402) return fail('AI credits are exhausted for this workspace', 402);
+  if (!res.ok) return fail('Question generation failed', 502);
+  const ai = await res.json();
+  const args = ai?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+  let parsed: { questions?: Array<Record<string, unknown>> } = {};
+  try { parsed = JSON.parse(args ?? '{}'); } catch { return fail('Question generation returned invalid data', 502); }
+  const questions = (parsed.questions ?? []).slice(0, count).map((q) => ({
+    question_text: String(q['question_text'] ?? ''),
+    question_type: QUESTION_TYPES.includes(String(q['question_type'])) ? String(q['question_type']) : 'multiple_choice',
+    options: Array.isArray(q['options']) ? (q['options'] as unknown[]).map(String) : null,
+    correct_answer: String(q['correct_answer'] ?? ''),
+    explanation: String(q['explanation'] ?? ''),
+    difficulty: ['easy', 'medium', 'hard'].includes(String(q['difficulty'])) ? String(q['difficulty']) : 'medium',
+    points: 10,
+  })).filter((q) => q.question_text && q.correct_answer);
+  if (!questions.length) return fail('No questions could be generated from this lesson', 422);
+  return json({ data: { questions } });
+}
+
 async function handle(request: Request, splat: string) {
   const segs = splat.split('/').filter(Boolean);
   const url = new URL(request.url);
@@ -344,6 +401,7 @@ async function handle(request: Request, splat: string) {
     if (request.method === 'GET' && segs[0] === 'questions' && segs[2] === 'hint') {
       return await handleHint(Number(segs[1]), userId, db);
     }
+    if (request.method === 'POST' && segs[0] === 'generate') return await handleGenerate(request, userId, db);
     if (request.method === 'POST' && segs[1] === 'progress') {
       return await handleProgress(Number(segs[0]), request, userId, db);
     }
