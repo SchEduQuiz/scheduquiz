@@ -11482,6 +11482,7 @@ function QuizPage() {
   };
   const startQuiz = async () => {
     var _a2, _b2, _c2;
+    finishingRef.current = false;
     try {
       setIsLoading(true);
       setError(null);
@@ -11843,10 +11844,12 @@ function QuizPage() {
       } else {
         const errorData = await response.json().catch(() => ({}));
         setError(((_a2 = errorData.error) == null ? void 0 : _a2.message) || "Failed to submit quiz");
+        finishingRef.current = false;
       }
     } catch (err) {
       console.error("Error finishing quiz:", err);
       setError("Failed to submit quiz");
+      finishingRef.current = false;
     }
   };
   if (isLoading || authLoading) {
