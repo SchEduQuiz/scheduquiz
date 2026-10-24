@@ -10,3 +10,4 @@
 - [x] Report System Settings as unavailable rather than inventing settings behavior.- [x] Quiz resume after refresh: progress saved server-side, restored on start (24h window).
 - [x] Fix empty-body admin reset stats/list 400 and message mark-as-read 406.
 - [ ] Publish so scheduquiz.lovable.app serves the fixed account and quiz services. Blocked: needs user to publish.
+- [x] Fix quiz submit 409 loop, lesson question load/save (400), AI question generation (CORS), service-worker fetch rejection.
