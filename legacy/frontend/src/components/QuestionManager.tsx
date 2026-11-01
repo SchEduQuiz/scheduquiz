@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { normalizeLessonQuestion } from '../../../../src/lib/quiz-progress';
 import { supabase } from '../lib/supabase';
 import { Sparkles, Plus, Edit, Trash2, ChevronUp, ChevronDown, Eye, X, BookOpen } from 'lucide-react';
 
@@ -26,6 +27,7 @@ interface QuestionManagerProps {
 export default function QuestionManager({ lessonId, lessonTitle, lessonContent, onClose }: QuestionManagerProps) {
   const [questions, setQuestions] = useState<LessonQuestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showAIModal, setShowAIModal] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -52,11 +54,12 @@ export default function QuestionManager({ lessonId, lessonTitle, lessonContent, 
 
   useEffect(() => {
     loadQuestions();
-  }, [lessonId]);
+  }, [lessonId, quizMode]);
 
   async function loadQuestions() {
     try {
       setLoading(true);
+      setLoadError('');
       
       // First, try to load questions directly by lesson_id
       const { data: lessonQuestions, error: lessonError } = await supabase
@@ -91,8 +94,9 @@ export default function QuestionManager({ lessonId, lessonTitle, lessonContent, 
         }
       }
 
-      setQuestions(allQuestions);
+      setQuestions(allQuestions.map(normalizeLessonQuestion));
     } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Questions could not be loaded');
       console.error('Error loading questions:', error);
     } finally {
       setLoading(false);
@@ -136,8 +140,8 @@ export default function QuestionManager({ lessonId, lessonTitle, lessonContent, 
         lesson_id: lessonId, // ← Primary relationship using lesson_id
         question_text: q.question_text,
         question_type: q.question_type,
-        options: q.options ? JSON.stringify(q.options) : null,
-        correct_answer: q.correct_answer,
+        options: normalizeLessonQuestion(q).options,
+        correct_answer: normalizeLessonQuestion(q).correct_answer,
         explanation: q.explanation,
         difficulty: q.difficulty,
         order_index: questions.length + index,
@@ -237,19 +241,19 @@ export default function QuestionManager({ lessonId, lessonTitle, lessonContent, 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user');
 
+      if (!manualForm.question_text.trim() || !manualForm.correct_answer.trim()) throw new Error('Enter a question and its correct answer');
+      if (manualForm.question_type === 'multiple_choice' && (manualForm.options.some(text => !text.trim()) || !/^[A-D]$/.test(manualForm.correct_answer))) throw new Error('Enter all four options and select the correct answer');
       let options = null;
       if (manualForm.question_type === 'multiple_choice') {
-        options = JSON.stringify(
-          manualForm.options.map((text, index) => ({
+        options = manualForm.options.map((text, index) => ({
             text,
             is_correct: String.fromCharCode(65 + index) === manualForm.correct_answer
-          }))
-        );
+          }));
       } else if (manualForm.question_type === 'true_false') {
-        options = JSON.stringify([
+        options = [
           { text: 'True', is_correct: manualForm.correct_answer === 'true' },
           { text: 'False', is_correct: manualForm.correct_answer === 'false' }
-        ]);
+        ];
       }
 
       const questionData = {
@@ -324,10 +328,11 @@ export default function QuestionManager({ lessonId, lessonTitle, lessonContent, 
       }));
 
       for (const update of updates) {
-        await supabase
+        const { error } = await supabase
           .from('lesson_questions')
           .update({ order_index: update.order_index })
           .eq('id', update.id);
+        if (error) throw error;
       }
 
       await loadQuestions();
@@ -446,6 +451,7 @@ export default function QuestionManager({ lessonId, lessonTitle, lessonContent, 
 
         {/* Questions List */}
         <div className="flex-1 overflow-y-auto p-6">
+          {loadError && <p role="alert">{loadError}</p>}
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
