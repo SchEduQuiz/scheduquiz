@@ -39,7 +39,7 @@ export function canResume(startedAt: string | null | undefined, now = Date.now()
 
 // One compatibility boundary for native JSON and older JSON-encoded options.
 // The editor uses letters for multiple choice and lowercase true/false.
-export function normalizeLessonQuestion<T extends { options?: unknown; correct_answer: string; question_type: string }>(question: T) {
+export function normalizeLessonQuestion<T extends { options?: unknown; correct_answer: string; question_type: string }>(question: T): Omit<T, 'options' | 'correct_answer'> & { options: { text: string; is_correct: boolean }[]; correct_answer: string } {
   let raw = question.options;
   for (let depth = 0; depth < 2 && typeof raw === 'string'; depth += 1) {
     try { raw = JSON.parse(raw); } catch { throw new Error('Question options contain invalid JSON'); }

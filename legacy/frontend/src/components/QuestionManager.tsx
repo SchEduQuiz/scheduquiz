@@ -110,7 +110,7 @@ export default function QuestionManager({ lessonId, lessonTitle, lessonContent, 
       if (!session) throw new Error('No session');
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-question-generator`,
+        `${(window as Window & { __eqServiceOrigin?: string }).__eqServiceOrigin ?? (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.hostname.endsWith('.lovable.app') ? location.origin : 'https://scheduquiz.lovable.app')}/api/public/quiz-engine/generate`,
         {
           method: 'POST',
           headers: {
