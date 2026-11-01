@@ -1,4 +1,3 @@
-```tsx
 import { useEffect, useState, useCallback, useRef } from 'react';
 
 interface PWAState {
@@ -68,8 +67,7 @@ export const usePWA = (): PWAHookReturn => {
     const handleBeforeInstallPrompt = (event: Event) => {
       const e = event as BeforeInstallPromptEvent;
 
-      e.preventDefault();
-
+      // Keep the browser's native banner eligible; installation is user initiated.
       setDeferredPrompt(e);
 
       setState((prev) => ({
@@ -157,6 +155,15 @@ export const usePWA = (): PWAHookReturn => {
 
   // Service Worker registration
   const registerServiceWorker = useCallback(async () => {
+    const host = location.hostname.toLowerCase();
+    const preview = /^(localhost|127\.0\.0\.1)$/.test(host) || window.self !== window.top || /^(?:id-preview|preview)(?:-[a-z0-9]+)?--/.test(host) || /^project--.*-dev\./.test(host) || /(^|\.)lovableproject(-dev)?\.com$|(^|\.)beta\.lovable\.dev$/.test(host) || new URLSearchParams(location.search).get('sw') === 'off';
+    if (preview) {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.filter(r => [r.active, r.waiting, r.installing].some(w => w && new URL(w.scriptURL).pathname === '/sw.js')).map(r => r.unregister()));
+      }
+      return;
+    }
     if (!('serviceWorker' in navigator)) {
       console.warn('Service workers are not supported');
       return;
@@ -290,4 +297,3 @@ export const usePWA = (): PWAHookReturn => {
 };
 
 export default usePWA;
-```
