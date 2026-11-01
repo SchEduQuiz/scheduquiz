@@ -12,7 +12,7 @@
 // the client. Callers are authenticated with their Supabase bearer token.
 import { createFileRoute } from '@tanstack/react-router';
 import { createClient } from '@supabase/supabase-js';
-import { canResume, sanitizeProgress } from '@/lib/quiz-progress';
+import { canResume, sanitizeProgress, normalizeLessonQuestion } from '@/lib/quiz-progress';
 
 const cors: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -355,8 +355,9 @@ async function handleGenerate(request: Request, userId: string, db: AnyClient) {
   const count = Math.min(Math.max(Number(body['num_questions']) || 10, 1), 20);
   const difficulty = ['easy', 'medium', 'hard', 'mixed'].includes(String(body['difficulty'])) ? String(body['difficulty']) : 'mixed';
   const types = (Array.isArray(body['question_types']) ? body['question_types'] : []).map(String).filter((t) => QUESTION_TYPES.includes(t));
-  const content = String(body['lesson_content'] ?? lesson['content'] ?? '').slice(0, 12000);
-  const title = String(body['lesson_title'] ?? lesson['title'] ?? '').slice(0, 200);
+  const content = String(lesson['content'] ?? '').slice(0, 12000);
+  const title = String(lesson['title'] ?? '').slice(0, 200);
+  if (!content.trim()) return fail('This lesson has no content to generate questions from', 422);
 
   const item = { type: 'object', additionalProperties: false,
     required: ['question_text', 'question_type', 'options', 'correct_answer', 'explanation', 'difficulty'],
@@ -401,7 +402,8 @@ async function handleGenerate(request: Request, userId: string, db: AnyClient) {
   }
   let parsed: { questions?: Array<Record<string, unknown>> } = {};
   try { parsed = JSON.parse(text || '{}'); } catch { return fail('Question generation returned invalid data', 502); }
-  const questions = (parsed.questions ?? []).slice(0, count).map((q) => ({
+  if (!Array.isArray(parsed.questions)) return fail('Question generation returned invalid data', 502);
+  const questions = parsed.questions.slice(0, count).map((q) => normalizeLessonQuestion({
     question_text: String(q['question_text'] ?? ''),
     question_type: QUESTION_TYPES.includes(String(q['question_type'])) ? String(q['question_type']) : 'multiple_choice',
     options: Array.isArray(q['options']) ? (q['options'] as unknown[]).map(String) : null,
@@ -409,7 +411,9 @@ async function handleGenerate(request: Request, userId: string, db: AnyClient) {
     explanation: String(q['explanation'] ?? ''),
     difficulty: ['easy', 'medium', 'hard'].includes(String(q['difficulty'])) ? String(q['difficulty']) : 'medium',
     points: 10,
-  })).filter((q) => q.question_text && q.correct_answer);
+  })).filter((q) => q.question_text && q.correct_answer &&
+    (q.question_type !== 'multiple_choice' || (q.options.length === 4 && q.options.filter(o => o.is_correct).length === 1)) &&
+    (q.question_type !== 'true_false' || ['true', 'false'].includes(q.correct_answer)));
   if (!questions.length) return fail('No questions could be generated from this lesson', 422);
   return json({ data: { questions } });
 }

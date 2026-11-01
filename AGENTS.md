@@ -12,3 +12,5 @@
 - Keep production-bundle patches synchronized between public/assets and static-dist/assets because both serve the imported application.
 - Static imported clients use authenticated TanStack server routes for privileged account operations; verify bearer identity and protected user_roles before loading the admin client.
 - user_roles is the authorization source; profiles.role is a compatibility display field for the imported application, never a signup privilege source.
+- Normalize lesson question options and editor answers through the shared quiz contract in src/lib/quiz-progress.ts; the imported bundle embeds that same function so legacy JSON strings and native JSON do not diverge.
+- Imported service callers use the single service-origin selector in tools/admin-transport.js; embed it identically in both deployment bundles to keep local, Lovable and external clients consistent.

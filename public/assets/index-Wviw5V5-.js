@@ -26,6 +26,8 @@ var _provider, _providerCalled, _a, _focused, _cleanup, _setup, _b, _online, _cl
 (function () {
   if (window.__eqAdminTransport) return;
   window.__eqAdminTransport = true;
+  const hostname = location.hostname.toLowerCase();
+  window.__eqServiceOrigin = /^(localhost|127\.0\.0\.1)$/.test(hostname) || hostname.endsWith('.lovable.app') ? location.origin : 'https://scheduquiz.lovable.app';
   const original = window.fetch.bind(window);
   window.fetch = async function (input, init) {
     const req = new Request(input, init);
@@ -34,14 +36,52 @@ var _provider, _providerCalled, _a, _focused, _cleanup, _setup, _b, _online, _cl
     if (path.endsWith('/functions/v1/admin-manage-users')) endpoint = 'users';
     if (path.includes('/functions/v1/password-reset-admin/')) endpoint = 'resets/' + path.split('/').pop();
     if (!endpoint) return original(input, init);
-    const origin = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.hostname.endsWith('.lovable.app') ? location.origin : 'https://scheduquiz.lovable.app';
-    return original(origin + '/api/public/admin/' + endpoint, {
+    return original(window.__eqServiceOrigin + '/api/public/admin/' + endpoint, {
       method: req.method,
       headers: req.headers,
       ...(req.method !== 'GET' && req.method !== 'HEAD' ? { body: await req.text() } : {}),
     });
   };
 })();
+function normalizeLessonQuestion(question) {
+  let raw = question.options;
+  for (let depth = 0;depth < 2 && typeof raw === "string"; depth += 1) {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      throw new Error("Question options contain invalid JSON");
+    }
+  }
+  if (raw != null && !Array.isArray(raw))
+    throw new Error("Question options must be a list");
+  const options = (Array.isArray(raw) ? raw : []).map((value) => {
+    if (typeof value === "string")
+      return { text: value, is_correct: false };
+    if (!value || typeof value !== "object" || !("text" in value) || typeof value.text !== "string") {
+      throw new Error("Question option text is invalid");
+    }
+    return { text: value.text, is_correct: "is_correct" in value && value.is_correct === true };
+  });
+  let answer = question.correct_answer;
+  if (question.question_type === "multiple_choice") {
+    const flagged = options.findIndex((option) => option.is_correct);
+    const exact = options.findIndex((option) => option.text === answer);
+    const letter = /^[A-D]$/i.test(answer) ? answer.toUpperCase().charCodeAt(0) - 65 : -1;
+    const index = flagged >= 0 ? flagged : exact >= 0 ? exact : letter;
+    if (index >= 0 && index < options.length) {
+      answer = String.fromCharCode(65 + index);
+      options.forEach((option, i) => {
+        option.is_correct = i === index;
+      });
+    }
+  } else if (question.question_type === "true_false") {
+    answer = answer.toLowerCase();
+    options.forEach((option) => {
+      option.is_correct = option.text.toLowerCase() === answer;
+    });
+  }
+  return { ...question, options, correct_answer: answer };
+}
 import { j as jsxRuntimeExports } from "./ui-DY79clDH.js";
 import { r as reactExports, R as React, v as vt, u as useLocation, L as Link, O as Outlet, a as useParams, b as useNavigate, c as useSearchParams, B as BrowserRouter, d as Routes, e as Route, N as Navigate } from "./router-CN5hptJQ.js";
 import { a as requireReactDom } from "./vendor-B1QZAsoL.js";
@@ -3267,7 +3307,7 @@ const usePWA = () => {
   }, []);
   const checkInstallPrompt = reactExports.useCallback(() => {
     const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
+      // Leave the native banner eligible; custom installation remains user initiated.
       setDeferredPrompt(e);
       setState((prev) => ({ ...prev, isInstallable: true }));
     };
@@ -3279,8 +3319,8 @@ const usePWA = () => {
   const installApp = reactExports.useCallback(async () => {
     if (!deferredPrompt) return;
     try {
-      const result = await deferredPrompt.prompt();
-      console.log("Install prompt result:", result);
+      await deferredPrompt.prompt();
+      const result = await deferredPrompt.userChoice;
       if (result.outcome === "accepted") {
         setState((prev) => ({ ...prev, isInstalled: true, isInstallable: false }));
       }
@@ -3296,6 +3336,12 @@ const usePWA = () => {
     setState((prev) => ({ ...prev, isOnline: false }));
   }, []);
   const registerServiceWorker = reactExports.useCallback(async () => {
+    const host = location.hostname.toLowerCase();
+    const preview = /^(localhost|127\.0\.0\.1)$/.test(host) || window.self !== window.top || /^(?:id-preview|preview)(?:-[a-z0-9]+)?--/.test(host) || /^project--.*-dev\./.test(host) || /(^|\.)lovableproject(-dev)?\.com$|(^|\.)beta\.lovable\.dev$/.test(host) || new URLSearchParams(location.search).get("sw") === "off";
+    if (preview) {
+      if ("serviceWorker" in navigator) { const registrations = await navigator.serviceWorker.getRegistrations(); await Promise.all(registrations.filter(r => [r.active, r.waiting, r.installing].some(w => w && new URL(w.scriptURL).pathname === "/sw.js")).map(r => r.unregister())); }
+      return;
+    }
     if ("serviceWorker" in navigator) {
       try {
         const reg = await (window.__eqSWRegistration || (window.__eqSWRegistration = navigator.serviceWorker.register("/sw.js", { scope: "/" })));
@@ -11462,7 +11508,7 @@ function QuizPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-engine/${quizSession.id}/progress`, {
+        await fetch(`${window.__eqServiceOrigin}/api/public/quiz-engine/${quizSession.id}/progress`, {
           method: "POST", keepalive: true,
           headers: { "Authorization": `Bearer ${session.access_token}`, "Content-Type": "application/json" },
           body: JSON.stringify({ answers: userAnswers, current_question: currentQuestion, hints: Array.from(hintRequested), elapsed_seconds: Math.floor((Date.now() - sessionStartTime) / 1e3) })
@@ -11498,7 +11544,7 @@ function QuizPage() {
         throw new Error("Failed to get authentication session. Please log in again.");
       }
       const quizId = getQuizIdForCategory(category || "science");
-      const response = await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-engine/start?quiz_id=${quizId}&questions=15`, {
+      const response = await fetch(`${window.__eqServiceOrigin}/api/public/quiz-engine/start?quiz_id=${quizId}&questions=15`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
@@ -11579,7 +11625,7 @@ function QuizPage() {
         error: sessionError
       } = await supabase.auth.getSession();
       if (sessionError || !session) return;
-      const response = await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-engine/questions/${question2.id}/hint`, {
+      const response = await fetch(`${window.__eqServiceOrigin}/api/public/quiz-engine/questions/${question2.id}/hint`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
@@ -11736,7 +11782,7 @@ function QuizPage() {
         user_answer: answer,
         response_time: questionTimes[parseInt(questionId)] || 0
       }));
-      const response = await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-engine/${quizSession.id}/submit`, {
+      const response = await fetch(`${window.__eqServiceOrigin}/api/public/quiz-engine/${quizSession.id}/submit`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
@@ -11778,7 +11824,7 @@ function QuizPage() {
             data: profile
           } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
           try {
-            const gamificationResponse = await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-gamification`, {
+            const gamificationResponse = await fetch(`${window.__eqServiceOrigin}/api/public/quiz-gamification`, {
               method: "POST",
               headers: {
                 "Authorization": `Bearer ${session.access_token}`,
@@ -15060,6 +15106,7 @@ function QuestionManager({
 }) {
   const [questions, setQuestions] = reactExports.useState([]);
   const [loading, setLoading] = reactExports.useState(true);
+  const [loadError, setLoadError] = reactExports.useState("");
   const [showAIModal, setShowAIModal] = reactExports.useState(false);
   const [showManualModal, setShowManualModal] = reactExports.useState(false);
   const [generating, setGenerating] = reactExports.useState(false);
@@ -15081,10 +15128,11 @@ function QuestionManager({
   });
   reactExports.useEffect(() => {
     loadQuestions();
-  }, [lessonId]);
+  }, [lessonId, quizMode]);
   async function loadQuestions() {
     try {
       setLoading(true);
+      setLoadError("");
       const {
         data: lessonQuestions,
         error: lessonError
@@ -15104,8 +15152,9 @@ function QuestionManager({
           allQuestions = quizQuestions || [];
         }
       }
-      setQuestions(allQuestions);
+      setQuestions(allQuestions.map(normalizeLessonQuestion));
     } catch (error) {
+      setLoadError(error.message || "Questions could not be loaded");
       console.error("Error loading questions:", error);
     } finally {
       setLoading(false);
@@ -15120,7 +15169,7 @@ function QuestionManager({
         }
       } = await supabase.auth.getSession();
       if (!session) throw new Error("No session");
-      const response = await fetch(`${(location.origin.indexOf("lovable.app")>-1?location.origin:"https://scheduquiz.lovable.app")}/api/public/quiz-engine/generate`, {
+      const response = await fetch(`${window.__eqServiceOrigin}/api/public/quiz-engine/generate`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,
@@ -15148,8 +15197,8 @@ function QuestionManager({
         // ← Primary relationship using lesson_id
         question_text: q.question_text,
         question_type: q.question_type,
-        options: q.options ? JSON.stringify(q.options) : null,
-        correct_answer: q.correct_answer,
+        options: normalizeLessonQuestion(q).options,
+        correct_answer: normalizeLessonQuestion(q).correct_answer,
         explanation: q.explanation,
         difficulty: q.difficulty,
         order_index: questions.length + index,
@@ -15233,20 +15282,22 @@ function QuestionManager({
         }
       } = await supabase.auth.getUser();
       if (!user) throw new Error("No user");
+      if (!manualForm.question_text.trim() || !manualForm.correct_answer.trim()) throw new Error("Enter a question and its correct answer");
+      if (manualForm.question_type === "multiple_choice" && (manualForm.options.some(text => !text.trim()) || !/^[A-D]$/.test(manualForm.correct_answer))) throw new Error("Enter all four options and select the correct answer");
       let options = null;
       if (manualForm.question_type === "multiple_choice") {
-        options = JSON.stringify(manualForm.options.map((text, index) => ({
+        options = manualForm.options.map((text, index) => ({
           text,
           is_correct: String.fromCharCode(65 + index) === manualForm.correct_answer
-        })));
+        }));
       } else if (manualForm.question_type === "true_false") {
-        options = JSON.stringify([{
+        options = [{
           text: "True",
           is_correct: manualForm.correct_answer === "true"
         }, {
           text: "False",
           is_correct: manualForm.correct_answer === "false"
-        }]);
+        }];
       }
       const questionData = {
         lesson_id: lessonId,
@@ -15308,9 +15359,10 @@ function QuestionManager({
         order_index: i
       }));
       for (const update of updates) {
-        await supabase.from("lesson_questions").update({
+        const { error } = await supabase.from("lesson_questions").update({
           order_index: update.order_index
         }).eq("id", update.id);
+        if (error) throw error;
       }
       await loadQuestions();
     } catch (error) {
@@ -15395,7 +15447,7 @@ function QuestionManager({
         ] })
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1 overflow-y-auto p-6", "data-matrix-id": "src/components/QuestionManager.tsx:448:8", "data-matrix-name": "div", "data-component-path": "src/components/QuestionManager.tsx", "data-component-line": "448", "data-component-file": "QuestionManager.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22flex-1%20overflow-y-auto%20p-6%22%7D", children: loading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center py-12", "data-matrix-id": "src/components/QuestionManager.tsx:450:12", "data-matrix-name": "div", "data-component-path": "src/components/QuestionManager.tsx", "data-component-line": "450", "data-component-file": "QuestionManager.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22text-center%20py-12%22%7D", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1 overflow-y-auto p-6", "data-matrix-id": "src/components/QuestionManager.tsx:448:8", "data-matrix-name": "div", "data-component-path": "src/components/QuestionManager.tsx", "data-component-line": "448", "data-component-file": "QuestionManager.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22flex-1%20overflow-y-auto%20p-6%22%7D", children: loadError ? jsxRuntimeExports.jsx("p", { role: "alert", children: loadError }) : loading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center py-12", "data-matrix-id": "src/components/QuestionManager.tsx:450:12", "data-matrix-name": "div", "data-component-path": "src/components/QuestionManager.tsx", "data-component-line": "450", "data-component-file": "QuestionManager.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22text-center%20py-12%22%7D", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto", "data-matrix-id": "src/components/QuestionManager.tsx:451:14", "data-matrix-name": "div", "data-component-path": "src/components/QuestionManager.tsx", "data-component-line": "451", "data-component-file": "QuestionManager.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22animate-spin%20rounded-full%20h-12%20w-12%20border-b-2%20border-blue-600%20mx-auto%22%7D" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-4 text-slate-600", "data-matrix-id": "src/components/QuestionManager.tsx:452:14", "data-matrix-name": "p", "data-component-path": "src/components/QuestionManager.tsx", "data-component-line": "452", "data-component-file": "QuestionManager.tsx", "data-component-name": "p", "data-component-content": "%7B%22className%22%3A%22mt-4%20text-slate-600%22%7D", children: "Loading questions..." })
     ] }) : questions.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center py-12", "data-matrix-id": "src/components/QuestionManager.tsx:455:12", "data-matrix-name": "div", "data-component-path": "src/components/QuestionManager.tsx", "data-component-line": "455", "data-component-file": "QuestionManager.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22text-center%20py-12%22%7D", children: [
