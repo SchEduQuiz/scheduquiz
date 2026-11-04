@@ -16,6 +16,8 @@
 ## November 1 question-contract and readiness audit
 
 - [x] Record baseline: 10 unit tests pass; both shipped bundles match; 10 lesson questions have JSON-string options; 60 challenge questions exist. Reproduced `question.options.map is not a function` in Chromium with the actual QuestionManager and a controlled legacy-shaped response.
-- [ ] Unify lesson option decoding, generation, editing and native JSON writes; add regression coverage.
-- [ ] Centralize service-origin selection and correct install prompt handling.
-- [ ] Verify actual question list/edit/save/read-back and service authorization; document evidence and remaining enterprise-readiness blockers.
+- [x] Unify lesson option decoding, generation, editing and native JSON writes; add regression coverage.
+- [x] Centralize service-origin selection and correct install prompt handling.
+- [x] Verify actual QuestionManager list/edit/save/read-back with controlled persistence and signed-out API denial; document evidence in DEPLOYMENT.md. 17 tests passed; latest preview validation passed.
+- [ ] Verify real-account question CRUD/generation and student persistence end-to-end. Blocked: external Supabase has no available authenticated test session.
+- [ ] Complete full enterprise-readiness validation. Blocked: authenticated integration coverage, deployed service verification and returning installed-client testing are unavailable; DEPLOYMENT.md records concrete uncompleted implementation risks, not a certification.
