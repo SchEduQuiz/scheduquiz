@@ -1,5 +1,11 @@
 # Admin dashboard validation
 
+## November 4 database security
+- [ ] Apply least-privilege reset RPC, profile, response and leaderboard access; centralize policy role checks.
+- [ ] Re-run database security checks and verify grants and access rules.
+- [ ] Enable provider leaked-password protection. Blocked: external Supabase auth settings are not writable through available tools.
+- [ ] Verify password hashing baseline without changing Supabase-managed auth records.
+
 - [x] Fix repeated loading in users and questions, navigation overlays and misleading diagnostics.
 - [x] Replace user and password-reset operations with authenticated server operations.
 - [x] Verify disposable user creation/edit/suspension/bulk reactivation and message persistence in Sent.
