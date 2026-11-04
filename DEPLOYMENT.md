@@ -97,6 +97,11 @@ selection and install-event handling without changing student records.
   and retained the correct-option marker; **no page errors**. Install event
   `defaultPrevented` was false. This used mocked persistence, not a real account.
 - Local signed-out admin reset statistics and quiz start both returned **401**.
+- `bun audit`: reported **25 vulnerabilities (1 critical, 14 high, 9 moderate,
+  1 low)** across the installed dependency graph. This is a failing security
+  readiness gate, despite the command exiting successfully. Findings include
+  dev tooling and transitive packages; production exploitability was not assessed.
+  No broad dependency upgrade was applied without compatibility verification.
 - Database read-only policy review: lesson writes require the course teacher or
   `has_role` admin; challenge attempts/responses are owner-readable. No migration
   or student-data mutation was executed in this audit.
@@ -129,6 +134,6 @@ Audit findings still needing complete implementations and verification:
 - The existing production app-shell worker can retain patched assets in its cache;
   HTTP revalidation does not invalidate those browser-held entries. A PWA cleanup or
   guarded generated-worker migration must be validated with returning installed users.
-- Source-to-static release generation, dependency/security scanning, load tests,
+- Source-to-static release generation, dependency remediation/security scanning, load tests,
   operational monitoring, backup/restore and the earlier database security warnings
   have not been fully verified in this audit.
