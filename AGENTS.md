@@ -14,3 +14,4 @@
 - user_roles is the authorization source; profiles.role is a compatibility display field for the imported application, never a signup privilege source.
 - Normalize lesson question options and editor answers through the shared quiz contract in src/lib/quiz-progress.ts; the imported bundle embeds that same function so legacy JSON strings and native JSON do not diverge.
 - Imported service callers use the single service-origin selector in tools/admin-transport.js; embed it identically in both deployment bundles to keep local, Lovable and external clients consistent.
+- Profile rows are owner/admin-private; the authenticated directory projects only identifiers, display names and compatibility role labels, and transport hydrates messaging without exposing email addresses.

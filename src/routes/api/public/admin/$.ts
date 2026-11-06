@@ -36,6 +36,17 @@ async function handle(request: Request) {
   });
   const { data: auth, error: authError } = await client.auth.getUser(token);
   if (authError || !auth.user) return json({ error: { message: 'Please sign in again' } }, 401);
+  const endpoint = new URL(request.url).pathname.split('/api/public/admin/')[1];
+  // Account details stay private; messaging receives only safe directory fields.
+  if (endpoint === 'directory') {
+    if (request.method !== 'GET') return json({ error: { message: 'Method not allowed' } }, 405);
+    const { data: caller, error: callerError } = await client.from('profiles').select('status').eq('id', auth.user.id).single();
+    if (callerError || caller?.status !== 'active') return json({ error: { message: 'Account is not active' } }, 403);
+    const { supabaseAdmin: db } = await import('@/integrations/supabase/client.server');
+    const { data, error } = await db.from('profiles').select('id,full_name,role').eq('status', 'active').order('full_name').limit(1000);
+    if (error) return json({ error: { message: 'Directory is unavailable' } }, 503);
+    return json(data ?? []);
+  }
   const { data: admin, error: roleError } = await client.rpc('has_role', { _user_id: auth.user.id, _role: 'admin' });
   if (roleError || !admin) return json({ error: { message: 'Administrator access required' } }, 403);
   const { data: profile } = await client.from('profiles').select('status').eq('id', auth.user.id).single();
@@ -47,7 +58,6 @@ async function handle(request: Request) {
   const parsed = bodySchema.safeParse(payload ?? null);
   if (!parsed.success) return json({ error: { message: 'Invalid account request' } }, 400);
   const body = parsed.data;
-  const endpoint = new URL(request.url).pathname.split('/api/public/admin/')[1];
   const { supabaseAdmin: db } = await import('@/integrations/supabase/client.server');
   const caller = auth.user.id;
   const audit = async (type: string, target: string) => {
