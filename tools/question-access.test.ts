@@ -50,3 +50,26 @@ test('one service-origin selector routes local and external admin clients withou
     expect(new Headers(received?.options.headers).get('Authorization')).toBe('Bearer test-only');
   }
 });
+
+test('messaging directory strips emails and filters recipients without opening profile reads', async () => {
+  const window = { fetch: async () => Response.json([{ id: 'teacher', full_name: 'Teacher', role: 'teacher', email: 'private@example.test' }, { id: 'student', full_name: 'Student', role: 'student' }]) };
+  runInNewContext(readFileSync('tools/admin-transport.js', 'utf8'), { window, location: { hostname: 'localhost', origin: 'http://localhost:8080' }, Request, Response, URL, Map });
+  const response = await window.fetch(new Request('https://example.com/rest/v1/profiles?select=id,full_name,email,role&role=eq.teacher', { headers: { Authorization: 'Bearer test-session', apikey: 'public-key' } }) as unknown as string);
+  expect(await response.json()).toEqual([{ id: 'teacher', full_name: 'Teacher', role: 'teacher' }]);
+});
+
+test('failed directory authorization is not converted to a successful empty directory', async () => {
+  const window = { fetch: async () => Response.json({ message: 'Forbidden' }, { status: 403 }) };
+  runInNewContext(readFileSync('tools/admin-transport.js', 'utf8'), { window, location: { hostname: 'localhost', origin: 'http://localhost:8080' }, Request, Response, URL });
+  const response = await window.fetch(new Request('https://example.com/rest/v1/profiles?select=id,full_name', { headers: { Authorization: 'Bearer test-session', apikey: 'public-key' } }) as unknown as string);
+  expect(response.status).toBe(403);
+});
+
+test('message directory hydration never includes recipient email addresses', async () => {
+  const window = { fetch: async (input: string | Request) => String(input instanceof Request ? input.url : input).includes('/directory') ? Response.json([{ id: 'teacher', full_name: 'Teacher', role: 'teacher' }]) : Response.json([{ id: 'message', sender_id: 'teacher', recipient_id: 'student', sender: null, recipient: null }]) };
+  runInNewContext(readFileSync('tools/admin-transport.js', 'utf8'), { window, location: { hostname: 'localhost', origin: 'http://localhost:8080' }, Request, Response, URL, Map });
+  const response = await window.fetch(new Request('https://example.com/rest/v1/messages?select=*,sender:profiles!messages_sender_id_fkey(id,full_name,email)', { headers: { Authorization: 'Bearer test-session', apikey: 'public-key' } }));
+  const rows = await response.json();
+  expect(rows[0].sender).toEqual({ id: 'teacher', full_name: 'Teacher', role: 'teacher' });
+  expect(rows[0].sender.email).toBeUndefined();
+});
