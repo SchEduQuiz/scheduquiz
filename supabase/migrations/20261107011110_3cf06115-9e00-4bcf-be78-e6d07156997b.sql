@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Users manage own points" ON public.user_points;
