@@ -14100,7 +14100,7 @@ function StudentDashboard() {
       const {
         data: gradesData,
         error: gradesError
-      } = await supabase.from("grades").select("*").eq("student_id", userId).order("graded_at", {
+      } = await supabase.from("grades").select("*, points_earned:total_score, submissions!inner(student_id)").eq("submissions.student_id", userId).order("graded_at", {
         ascending: false
       });
       if (gradesError) {
@@ -14141,7 +14141,7 @@ function StudentDashboard() {
       try {
         const {
           data: gradesData
-        } = await supabase.from("grades").select("points_earned, assignment_id").eq("student_id", userId);
+        } = await supabase.from("grades").select("points_earned:total_score, assignment_id, submissions!inner(student_id)").eq("submissions.student_id", userId);
         let totalGradePoints = 0;
         let totalGradeCount = 0;
         if (gradesData && gradesData.length > 0) {
