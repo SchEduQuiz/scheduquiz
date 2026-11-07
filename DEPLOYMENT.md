@@ -125,8 +125,7 @@ Audit findings still needing complete implementations and verification:
 - Gamification ignores some persistence errors and caps aggregation at 500 attempts;
   analytics helpers similarly cap results or mask errors. They are not verified
   enterprise-scale totals.
-- System Settings remains unavailable; its read policy still references the profile
-  compatibility role rather than the centralized authorization table.
+- System Settings remains unavailable; its authorization now uses protected user roles.
 - Admin bulk changes/reset approval lack transactional outcome guarantees under
   partial failure/concurrency; real-account integration coverage is outstanding.
 - Question-management REST adapters and repeated authentication/CORS definitions
@@ -137,3 +136,48 @@ Audit findings still needing complete implementations and verification:
 - Source-to-static release generation, dependency remediation/security scanning, load tests,
   operational monitoring, backup/restore and the earlier database security warnings
   have not been fully verified in this audit.
+
+## Database security remediation
+
+Two migrations completed successfully. The database linter fell from **13 to 2**
+findings: required authenticated `has_role` execution and disabled provider leaked-password
+protection. The latter cannot be changed through this workspace's external-Supabase
+tools; enable it in Supabase Authentication password-security settings before onboarding.
+Do not revoke `has_role` from authenticated users to silence the remaining advisor:
+it is required by RLS and administrator authorization, fixed-search-path and restricted
+to the caller's own identity (or trusted service role).
+
+- Four reset-related privileged functions are now server-only; the mutable trigger
+  search path is fixed. Two deliberately server-only quiz tables have explicit
+  service-role policies and no client grants.
+- Profile rows are owner/admin-private. The authenticated directory returns only
+  identifiers, names and display-role labels; messaging transport preserves recipient
+  lookup and display without broad profile or email access. Publication is required
+  for external clients to use this directory service.
+- Reset submissions must be pending and cannot contain approval/admin/password fields.
+  Email, reason/details size and timestamp bounds are enforced by the insert policy.
+  Public request abuse/rate limiting is not solved by RLS alone.
+- Lesson response writes and leaderboard mutations are server-only. Leaderboard reads
+  are now own-account/admin only; cross-student ranking is intentionally unavailable
+  until a privacy-reviewed projection is provided.
+- All policy references to `profiles.role` were replaced with the protected role helper.
+  Public-policy calls skip the helper for anonymous requests to preserve its revoked
+  anonymous execution grant.
+- Achievement definitions contain no student data and remain readable by signed-in
+  accounts; two informational broad-catalog findings are intentional, not hidden.
+- Aggregate password-hash inspection confirmed existing accounts use provider-managed
+  bcrypt with cost 10. No hashes were exposed or altered; hosted hash configuration
+  and stronger password-policy settings could not be read/changed through available tools.
+
+Verification: **20 tests passed** using `bun test tools/`; both shipped bundles pass
+syntax checks, match exactly, and latest automatic preview validation reports build OK.
+Migration assertions and read-only catalog queries confirm reset lookup execution is
+denied to anonymous/student roles, student score insertion is denied, anonymous
+leaderboard reads are denied, and service-role scoring and authenticated role checks
+remain granted. No legacy profile-role policy references remain.
+
+Chromium rendered the public course shell without page errors; local signed-out
+directory/reset endpoints returned 401. Direct external Supabase probes all returned
+401, including public courses, so those results do **not** prove live RLS behavior or
+successful course loading. Real teacher/student authenticated workflows, reset email
+delivery and deployed directory compatibility remain unverified. No readiness certification.

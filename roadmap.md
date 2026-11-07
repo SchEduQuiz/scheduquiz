@@ -1,10 +1,11 @@
 # Admin dashboard validation
 
 ## November 4 database security
-- [ ] Apply least-privilege reset RPC, profile, response and leaderboard access; centralize policy role checks.
-- [ ] Re-run database security checks and verify grants and access rules.
+- [x] Apply least-privilege reset RPC, profile, response and leaderboard access; centralize policy role checks.
+- [x] Re-run database security checks and verify grants and access rules. Linter: 13 to 2; authenticated has_role remains intentionally available. 20 tests pass.
 - [ ] Enable provider leaked-password protection. Blocked: external Supabase auth settings are not writable through available tools.
-- [ ] Verify password hashing baseline without changing Supabase-managed auth records.
+- [x] Verify password hashing baseline without changing Supabase-managed auth records: provider bcrypt cost 10.
+- [ ] Verify authenticated directory/messages and course loading after publication. Blocked: external authentication unavailable; direct public Supabase probes returned 401, not verified RLS outcomes.
 
 - [x] Fix repeated loading in users and questions, navigation overlays and misleading diagnostics.
 - [x] Replace user and password-reset operations with authenticated server operations.
