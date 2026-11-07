@@ -1629,12 +1629,14 @@ export type Database = {
       }
       lesson_progress: {
         Row: {
+          completed: boolean
           completed_at: string | null
           course_id: string
           created_at: string | null
           id: string
           is_completed: boolean | null
           last_quiz_attempt_at: string | null
+          last_viewed_at: string | null
           lesson_id: string
           notes: string | null
           quiz_attempts: number | null
@@ -1646,12 +1648,14 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          completed?: boolean
           completed_at?: string | null
           course_id: string
           created_at?: string | null
           id?: string
           is_completed?: boolean | null
           last_quiz_attempt_at?: string | null
+          last_viewed_at?: string | null
           lesson_id: string
           notes?: string | null
           quiz_attempts?: number | null
@@ -1663,12 +1667,14 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          completed?: boolean
           completed_at?: string | null
           course_id?: string
           created_at?: string | null
           id?: string
           is_completed?: boolean | null
           last_quiz_attempt_at?: string | null
+          last_viewed_at?: string | null
           lesson_id?: string
           notes?: string | null
           quiz_attempts?: number | null
