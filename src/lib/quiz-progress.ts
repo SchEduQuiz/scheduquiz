@@ -2,6 +2,26 @@
 // the attempt are kept, so a client cannot plant data for other questions.
 export const RESUME_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+// Analytics reads the same server-owned records that challenge submission saves.
+// Keep the legacy display timestamp name without duplicating score records.
+export async function loadCompletedQuizScores(client: { from: (table: string) => any }, userId: string, category = 'all') {
+  if (!userId) throw new Error('Sign in to view your quiz analytics');
+  const scores: Record<string, any>[] = [];
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    let query = client.from('challenge_attempts')
+      .select('id, quiz_id, category, score, max_score, percentage, time_taken, correct_answers, total_questions, hints_used, created_at:submitted_at')
+      .eq('user_id', userId).eq('status', 'completed')
+      .order('submitted_at', { ascending: false }).order('id', { ascending: false })
+      .range(offset, offset + pageSize - 1);
+    if (category !== 'all') query = query.eq('category', category);
+    const { data, error } = await query;
+    if (error) throw new Error('Unable to load quiz analytics. Please try again.');
+    scores.push(...(data ?? []));
+    if (!data || data.length < pageSize) return scores;
+  }
+}
+
 export type QuizProgress = {
   answers: Record<string, string>;
   current_question: number;
