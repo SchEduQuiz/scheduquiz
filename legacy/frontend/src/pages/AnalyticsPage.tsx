@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { loadCompletedQuizScores } from '../../../../src/lib/quiz-progress';
 import { 
   TrendingUp, Award, Clock, Target, ChevronLeft, 
   BarChart3, PieChart, Calendar, Trophy, Flame,
@@ -44,6 +45,7 @@ export default function AnalyticsPage() {
   const [allCategoryStats, setAllCategoryStats] = useState<CategoryAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(category);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -52,27 +54,11 @@ export default function AnalyticsPage() {
   }, [user, selectedCategory]);
 
   const loadAnalyticsData = async () => {
+    if (!user) return;
     try {
       setLoading(true);
-      
-      // Load all quiz scores for the user
-      let query = supabase
-        .from('quiz_scores')
-        .select('*')
-        .eq('user_id', user!.id)
-        .eq('is_completed', true)
-        .order('created_at', { ascending: false });
-
-      if (selectedCategory && selectedCategory !== 'all') {
-        query = query.eq('category', selectedCategory);
-      }
-
-      const { data: scores, error } = await query;
-
-      if (error) {
-        console.error('Error loading quiz scores:', error);
-        return;
-      }
+      setLoadError(null);
+      const scores = await loadCompletedQuizScores(supabase, user.id, selectedCategory) as QuizScore[];
 
       setQuizScores(scores || []);
 
@@ -90,7 +76,7 @@ export default function AnalyticsPage() {
             if (!categoriesMap.has(score.category)) {
               categoriesMap.set(score.category, []);
             }
-            categoriesMap.get(score.category)!.push(score);
+            categoriesMap.get(score.category)?.push(score);
           });
 
           const allStats = Array.from(categoriesMap.entries()).map(([cat, scores]) => 
@@ -102,6 +88,11 @@ export default function AnalyticsPage() {
         setAnalytics(null);
         setAllCategoryStats([]);
       }
+    } catch {
+      setQuizScores([]);
+      setAnalytics(null);
+      setAllCategoryStats([]);
+      setLoadError('Unable to load quiz analytics. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -171,15 +162,15 @@ export default function AnalyticsPage() {
           
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
             <BarChart3 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">No Quiz Data Yet</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">{loadError ? 'Analytics Unavailable' : 'No Quiz Data Yet'}</h2>
             <p className="text-slate-600 mb-6">
-              Complete some quizzes to see your performance analytics here.
+              {loadError || 'Complete some quizzes to see your performance analytics here.'}
             </p>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => loadError ? loadAnalyticsData() : navigate('/')}
               className="bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition"
             >
-              Start a Quiz
+              {loadError ? 'Try Again' : 'Start a Quiz'}
             </button>
           </div>
         </div>

@@ -1,3 +1,21 @@
+async function loadCompletedQuizScores(client, userId, category = 'all') {
+  if (!userId) throw new Error('Sign in to view your quiz analytics');
+  const scores = [];
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    let query = client.from('challenge_attempts')
+      .select('id, quiz_id, category, score, max_score, percentage, time_taken, correct_answers, total_questions, hints_used, created_at:submitted_at')
+      .eq('user_id', userId).eq('status', 'completed')
+      .order('submitted_at', { ascending: false }).order('id', { ascending: false })
+      .range(offset, offset + pageSize - 1);
+    if (category !== 'all') query = query.eq('category', category);
+    const { data, error } = await query;
+    if (error) throw new Error('Unable to load quiz analytics. Please try again.');
+    scores.push(...(data ?? []));
+    if (!data || data.length < pageSize) return scores;
+  }
+}
+
 const __edgeUnavailable=(..._a)=>Promise.reject(new Error("Edge function not deployed"));const __edgeLocal=async function(name,opts){const SB=(window.__SB_URL||"https://sabhsoclgsumkuwsiqfu.supabase.co");let key=window.__SB_KEY||"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhYmhzb2NsZ3N1bWt1d3NpcWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5MDI3MDAsImV4cCI6MjEwMzQ3ODcwMH0.z-flaqk4lihRsvJLp-R2-_FksFYqLOTzzzsS_fB0NuE";let tok="";try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sb-.*-auth-token$/.test(k)){const v=JSON.parse(localStorage.getItem(k)||"{}");if(v&&v.access_token)tok=v.access_token}}}catch(e){}const H={apikey:key,Authorization:"Bearer "+(tok||key),"Content-Type":"application/json"};const cnt=async function(t){try{const r=await fetch(SB+"/rest/v1/"+t+"?select=id",{headers:Object.assign({},H,{Prefer:"count=exact",Range:"0-0"})});const cr=r.headers.get("content-range")||"";const n=parseInt((cr.split("/")[1]||"0"),10);return isNaN(n)?0:n}catch(e){return 0}};const roles=async function(){try{const r=await fetch(SB+"/rest/v1/profiles?select=role&limit=1000",{headers:H});const d=await r.json();return Array.isArray(d)?d:[]}catch(e){return[]}};const rs=await roles();const by=function(x){return rs.filter(function(u){return u.role===x}).length};const courses=await cnt("courses");const enrollments=await cnt("enrollments");const base={totalUsers:rs.length,totalStudents:by("student"),totalTeachers:by("teacher"),totalAdmins:by("admin"),totalCourses:courses,totalEnrollments:enrollments};if(name==="analytics-engine"){return{data:{data:Object.assign({},base,{usersByRole:{student:base.totalStudents,teacher:base.totalTeachers,admin:base.totalAdmins}})},error:null}}return{data:{data:base},error:null}};(function(){if(typeof window==="undefined"||window.__eqShim)return;window.__eqShim=1;const TABLES=["lesson_questions","questions","lesson_quizzes","quizzes"];const of=window.fetch.bind(window);const J=(b,s)=>new Response(JSON.stringify(b),{status:s||200,headers:{"Content-Type":"application/json"}});window.fetch=async function(input,init){try{const url=typeof input==="string"?input:(input&&input.url)||"";if(url.indexOf("/functions/v1/admin-question-management")===-1)return of(input,init);const req=typeof input==="string"?new Request(input,init):input;const h=new Headers(req.headers);const base=url.split("/functions/v1/")[0]+"/rest/v1/";const rh={apikey:h.get("apikey")||"",Authorization:h.get("Authorization")||"","Content-Type":"application/json"};const rest=(p,o)=>of(base+p,Object.assign({headers:rh},o||{}));const body=await req.clone().json().catch(()=>({}));const action=body.action,tableName=body.tableName,questionId=body.questionId,updates=body.updates||{},filters=body.filters||{};const limit=filters.limit||50,offset=filters.offset||0;if(["create_question","update_question","delete_question","bulk_delete_questions","duplicate_question"].includes(action)&&!TABLES.includes(tableName))return J({error:{message:"Invalid question table"}},400);const checked=async r=>{const d=await r.json();if(!r.ok)throw new Error(d.message||"Question request failed");return d};let result;const q=(t)=>{let s=t+"?select=*";if(filters.category)s+="&category=eq."+encodeURIComponent(filters.category);if(filters.question_type)s+="&question_type=eq."+encodeURIComponent(filters.question_type);if(filters.quiz_id)s+="&quiz_id=eq."+filters.quiz_id;if(filters.lesson_id)s+="&lesson_id=eq."+filters.lesson_id;return s+"&order=created_at.desc&limit="+limit+"&offset="+offset};switch(action){case"get_questions":{if(tableName&&TABLES.indexOf(tableName)>-1){const r=await rest(q(tableName));result=await checked(r)}else{const rs=await Promise.all(TABLES.map(t=>rest(q(t)).then(checked)));result=TABLES.map((t,i)=>({table:t,questions:Array.isArray(rs[i])?rs[i]:[]}))}break}case"create_question":{const r=await rest(tableName,{method:"POST",headers:Object.assign({},rh,{Prefer:"return=representation"}),body:JSON.stringify(Object.assign({},updates,{created_at:new Date().toISOString(),updated_at:new Date().toISOString()}))});const d=await r.json();if(!r.ok)return J({error:{message:d.message||"Failed to create question"}},400);result=d;break}case"update_question":{const r=await rest(tableName+"?id=eq."+questionId,{method:"PATCH",headers:Object.assign({},rh,{Prefer:"return=representation"}),body:JSON.stringify(Object.assign({},updates,{updated_at:new Date().toISOString()}))});const d=await r.json();if(!r.ok)return J({error:{message:d.message||"Failed to update question"}},400);result=d;break}case"delete_question":{const r=await rest(tableName+"?id=eq."+questionId,{method:"DELETE"});if(!r.ok)return J({error:{message:"Failed to delete question"}},400);result={success:true,message:"Question deleted successfully"};break}case"bulk_delete_questions":{const ids=(updates&&updates.questionIds)||[];const res=[];for(const id of ids){try{const r=await rest(tableName+"?id=eq."+id,{method:"DELETE"});res.push({questionId:id,success:r.ok})}catch(e){res.push({questionId:id,success:false,error:String(e)})}}result={results:res};break}case"duplicate_question":{const r0=await rest(tableName+"?id=eq."+questionId);const rows=await checked(r0);if(!Array.isArray(rows)||!rows.length)return J({error:{message:"Question not found"}},404);const o=Object.assign({},rows[0]);delete o.id;delete o.created_at;delete o.updated_at;if(o.question_text)o.question_text=o.question_text+" (Copy)";if(o.title)o.title=o.title+" (Copy)";const r=await rest(tableName,{method:"POST",headers:Object.assign({},rh,{Prefer:"return=representation"}),body:JSON.stringify(o)});const d=await r.json();if(!r.ok)return J({error:{message:d.message||"Failed to duplicate question"}},400);result=d;break}case"get_question_stats":{const rs=await Promise.all(TABLES.map(t=>rest(t+"?select=*&limit=1000").then(checked)));const stats={};TABLES.forEach((t,i)=>{stats[t]=Array.isArray(rs[i])?rs[i].length:0});result={counts:stats,total:Object.values(stats).reduce((a,b)=>a+b,0)};break}case"search_questions":{const term=encodeURIComponent(body.searchTerm||filters.search||"");const rs=await Promise.all(TABLES.map(t=>rest(t+"?select=*&limit="+limit).then(checked)));result={};TABLES.forEach((t,i)=>{const rows=Array.isArray(rs[i])?rs[i]:[];result[t]=term?rows.filter(r=>JSON.stringify(r).toLowerCase().indexOf(decodeURIComponent(term).toLowerCase())>-1):rows});break}default:return J({error:{message:"Unknown action: "+action}},400)}return J({data:result})}catch(e){return J({error:{message:(e&&e.message)||"Shim error"}},500)}};})();
 (function(){if(typeof window==="undefined"||window.__eqUserShim)return;window.__eqUserShim=1;var of=window.fetch.bind(window);var J=function(b,s){return new Response(JSON.stringify(b),{status:s||200,headers:{"Content-Type":"application/json"}})};window.fetch=async function(input,init){try{var url=typeof input==="string"?input:(input&&input.url)||"";var isU=url.indexOf("/functions/v1/admin-manage-users")>-1;var isP=url.indexOf("/functions/v1/password-reset-request")>-1;if(!isU&&!isP)return of(input,init);var req=typeof input==="string"?new Request(input,init):input;var h=new Headers(req.headers);var origin=url.split("/functions/v1/")[0];var base=origin+"/rest/v1/";var apikey=h.get("apikey")||"";var rh={apikey:apikey,Authorization:h.get("Authorization")||("Bearer "+apikey),"Content-Type":"application/json"};var rest=function(p,o){return of(base+p,Object.assign({headers:rh},o||{}))};var body=await req.clone().json().catch(function(){return{}});
 if(isP){var r=await rest("password_reset_requests",{method:"POST",headers:Object.assign({},rh,{Prefer:"return=minimal"}),body:JSON.stringify({user_email:body.email,reason:body.reason||null,request_details:body.requestDetails||null,status:"pending"})});if(!r.ok){var e=await r.json().catch(function(){return{}});return J({error:{message:e.message||"Failed to submit password reset request"}},400)}return J({success:true,message:"Your password reset request has been submitted. An administrator will review it shortly."})}
@@ -12614,28 +12632,18 @@ function AnalyticsPage() {
   const [allCategoryStats, setAllCategoryStats] = reactExports.useState([]);
   const [loading, setLoading] = reactExports.useState(true);
   const [selectedCategory, setSelectedCategory] = reactExports.useState(category);
+  const [loadError, setLoadError] = reactExports.useState(null);
   reactExports.useEffect(() => {
     if (user) {
       loadAnalyticsData();
     }
   }, [user, selectedCategory]);
   const loadAnalyticsData = async () => {
+    if (!user) return;
     try {
       setLoading(true);
-      let query = supabase.from("quiz_scores").select("*").eq("user_id", user.id).eq("is_completed", true).order("created_at", {
-        ascending: false
-      });
-      if (selectedCategory && selectedCategory !== "all") {
-        query = query.eq("category", selectedCategory);
-      }
-      const {
-        data: scores,
-        error
-      } = await query;
-      if (error) {
-        console.error("Error loading quiz scores:", error);
-        return;
-      }
+      setLoadError(null);
+      const scores = await loadCompletedQuizScores(supabase, user.id, selectedCategory);
       setQuizScores(scores || []);
       if (scores && scores.length > 0) {
         if (selectedCategory && selectedCategory !== "all") {
@@ -12657,6 +12665,11 @@ function AnalyticsPage() {
         setAnalytics(null);
         setAllCategoryStats([]);
       }
+    } catch {
+      setQuizScores([]);
+      setAnalytics(null);
+      setAllCategoryStats([]);
+      setLoadError("Unable to load quiz analytics. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -12725,9 +12738,9 @@ function AnalyticsPage() {
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white rounded-2xl shadow-xl p-8 text-center", "data-matrix-id": "src/pages/AnalyticsPage.tsx:172:10", "data-matrix-name": "div", "data-component-path": "src/pages/AnalyticsPage.tsx", "data-component-line": "172", "data-component-file": "AnalyticsPage.tsx", "data-component-name": "div", "data-component-content": "%7B%22className%22%3A%22bg-white%20rounded-2xl%20shadow-xl%20p-8%20text-center%22%7D", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(BarChart3, { className: "h-16 w-16 text-slate-400 mx-auto mb-4", "data-matrix-id": "src/pages/AnalyticsPage.tsx:173:12", "data-matrix-name": "BarChart3", "data-component-path": "src/pages/AnalyticsPage.tsx", "data-component-line": "173", "data-component-file": "AnalyticsPage.tsx", "data-component-name": "BarChart3", "data-component-content": "%7B%22className%22%3A%22h-16%20w-16%20text-slate-400%20mx-auto%20mb-4%22%7D" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-2xl font-bold text-slate-800 mb-2", "data-matrix-id": "src/pages/AnalyticsPage.tsx:174:12", "data-matrix-name": "h2", "data-component-path": "src/pages/AnalyticsPage.tsx", "data-component-line": "174", "data-component-file": "AnalyticsPage.tsx", "data-component-name": "h2", "data-component-content": "%7B%22className%22%3A%22text-2xl%20font-bold%20text-slate-800%20mb-2%22%7D", children: "No Quiz Data Yet" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-slate-600 mb-6", "data-matrix-id": "src/pages/AnalyticsPage.tsx:175:12", "data-matrix-name": "p", "data-component-path": "src/pages/AnalyticsPage.tsx", "data-component-line": "175", "data-component-file": "AnalyticsPage.tsx", "data-component-name": "p", "data-component-content": "%7B%22className%22%3A%22text-slate-600%20mb-6%22%7D", children: "Complete some quizzes to see your performance analytics here." }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => navigate("/"), className: "bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition", "data-matrix-id": "src/pages/AnalyticsPage.tsx:178:12", "data-matrix-name": "button", "data-component-path": "src/pages/AnalyticsPage.tsx", "data-component-line": "178", "data-component-file": "AnalyticsPage.tsx", "data-component-name": "button", "data-component-content": "%7B%22onClick%22%3A%22%5BArrowFunctionExpression%5D%22%2C%22className%22%3A%22bg-blue-600%20text-white%20py-3%20px-6%20rounded-lg%20font-semibold%20hover%3Abg-blue-700%20transition%22%7D", children: "Start a Quiz" })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-2xl font-bold text-slate-800 mb-2", "data-matrix-id": "src/pages/AnalyticsPage.tsx:174:12", "data-matrix-name": "h2", "data-component-path": "src/pages/AnalyticsPage.tsx", "data-component-line": "174", "data-component-file": "AnalyticsPage.tsx", "data-component-name": "h2", "data-component-content": "%7B%22className%22%3A%22text-2xl%20font-bold%20text-slate-800%20mb-2%22%7D", children: loadError ? "Analytics Unavailable" : "No Quiz Data Yet" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-slate-600 mb-6", "data-matrix-id": "src/pages/AnalyticsPage.tsx:175:12", "data-matrix-name": "p", "data-component-path": "src/pages/AnalyticsPage.tsx", "data-component-line": "175", "data-component-file": "AnalyticsPage.tsx", "data-component-name": "p", "data-component-content": "%7B%22className%22%3A%22text-slate-600%20mb-6%22%7D", children: loadError || "Complete some quizzes to see your performance analytics here." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => loadError ? loadAnalyticsData() : navigate("/"), className: "bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition", "data-matrix-id": "src/pages/AnalyticsPage.tsx:178:12", "data-matrix-name": "button", "data-component-path": "src/pages/AnalyticsPage.tsx", "data-component-line": "178", "data-component-file": "AnalyticsPage.tsx", "data-component-name": "button", "data-component-content": "%7B%22onClick%22%3A%22%5BArrowFunctionExpression%5D%22%2C%22className%22%3A%22bg-blue-600%20text-white%20py-3%20px-6%20rounded-lg%20font-semibold%20hover%3Abg-blue-700%20transition%22%7D", children: loadError ? "Try Again" : "Start a Quiz" })
       ] })
     ] }) });
   }
