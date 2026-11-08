@@ -2,8 +2,9 @@
 
 ## November 8 post-quiz analytics
 - [x] Audit baseline: 20 tests pass; controlled quiz completion reproduces No Quiz Data Yet; analytics reads quiz_scores instead of server-owned challenge_attempts.
-- [ ] Unify completed-attempt reads, preserve owner-only access, and expose recoverable load failures; no schema changes.
-- [ ] Verify completion → analytics, category filters, refresh, failure/retry and regression tests. Real-account persistence requires an external authenticated session.
+- [x] Unify completed-attempt reads, preserve owner-only access, and expose recoverable load failures; no schema changes.
+- [x] Verify controlled completion → analytics, category filters, refresh, failure/retry and 24 regression tests; bundle syntax and preview validation pass.
+- [ ] Verify real-account post-quiz persistence and published clients. Blocked: external authentication has no managed test session; production not published in this task.
 
 ## November 4 database security
 - [x] Apply least-privilege reset RPC, profile, response and leaderboard access; centralize policy role checks.

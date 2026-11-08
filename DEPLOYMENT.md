@@ -139,6 +139,39 @@ Audit findings still needing complete implementations and verification:
 
 ## Database security remediation
 
+## November 8 post-quiz analytics repair
+
+Baseline: 20 tests passed. In Chromium, completing a controlled quiz and clicking
+View Analytics showed No Quiz Data Yet. Submission saves challenge_attempts, but
+AnalyticsPage read the obsolete quiz_scores table; the latter also expects UUID
+quiz IDs rather than challenge numeric IDs. No duplicate score writes were added.
+
+The source and both identical deployment bundles now use the shared completed-attempt
+reader, with explicit user/status/category filters, timestamp alias, deterministic
+ordering and pagination beyond 500 rows. Failed requests clear stale statistics and
+show Analytics Unavailable with Try Again instead of claiming there is no quiz data.
+Existing owner-only SELECT policy was inspected; no policies, grants, schema or
+student records were changed. The server and service-origin selection are unchanged.
+
+Evidence: `bun test tools/` passed 24 tests (66 assertions); both bundles passed
+`node --check` and byte comparison. Automatic preview validation reported build OK.
+Controlled Chromium completed a quiz, opened analytics showing 1 attempt, 100%,
+1/1 correct and 3 seconds, checked category selection and refresh, simulated a 403,
+and recovered through Try Again. No page exceptions occurred; screenshots were
+reviewed. Initial browser attempts used nonexistent/disabled completion buttons;
+the successful test used the actual auto-submit flow. A raw fixture timestamp was
+corrected to emulate the requested PostgREST timestamp alias, not a production fix.
+Focused ESLint exposed existing formatting violations in quiz-progress.ts; new
+explicit-any types were removed. Whole-project lint is not certified.
+
+Limitations: this browser test used isolated auth/API responses, not real student
+persistence. External Supabase has no managed authenticated session. Production
+and Vercel publication remain outstanding. Existing score-trust, answer-disclosure
+and other security-scan findings are outside this repair and remain unresolved.
+Migration status: none required or applied. This is not a production-readiness certification.
+
+## Earlier database security remediation results
+
 Two migrations completed successfully. The database linter fell from **13 to 2**
 findings: required authenticated `has_role` execution and disabled provider leaked-password
 protection. The latter cannot be changed through this workspace's external-Supabase
