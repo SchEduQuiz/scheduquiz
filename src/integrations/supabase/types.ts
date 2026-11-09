@@ -646,6 +646,7 @@ export type Database = {
           progress_updated_at: string | null
           question_ids: number[]
           quiz_id: number
+          result: Json | null
           score: number
           session_id: string
           started_at: string
@@ -668,6 +669,7 @@ export type Database = {
           progress_updated_at?: string | null
           question_ids?: number[]
           quiz_id: number
+          result?: Json | null
           score?: number
           session_id: string
           started_at?: string
@@ -690,6 +692,7 @@ export type Database = {
           progress_updated_at?: string | null
           question_ids?: number[]
           quiz_id?: number
+          result?: Json | null
           score?: number
           session_id?: string
           started_at?: string
@@ -3424,6 +3427,16 @@ export type Database = {
       cleanup_expired_reset_data: { Args: never; Returns: number }
       create_default_ai_rubric: {
         Args: { assignment_id: string }
+        Returns: Json
+      }
+      finalize_challenge_attempt: {
+        Args: {
+          p_attempt_id: string
+          p_quiz_id: number
+          p_responses: Json
+          p_result: Json
+          p_user_id: string
+        }
         Returns: Json
       }
       generate_temporary_password: { Args: never; Returns: string }
