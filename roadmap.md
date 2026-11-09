@@ -1,5 +1,10 @@
 # Admin dashboard validation
 
+## November 9 navigation and quiz-result recovery
+- [x] Audit baseline: 24 tests pass; Login click reproduces blank root, refresh restores UI. Route transitions replace the embedded app mount. Quiz finalization marks completion before unchecked result writes; retries identify quiz rather than attempt.
+- [ ] Keep one persistent app mount; bind submission/progress/recovery to the original attempt and finalize results atomically with stable replay.
+- [ ] Verify click navigation/back/forward, completion/lost-response retry/refresh, regression and database transaction tests; record evidence and limitations.
+
 ## November 8 post-quiz analytics
 - [x] Audit baseline: 20 tests pass; controlled quiz completion reproduces No Quiz Data Yet; analytics reads quiz_scores instead of server-owned challenge_attempts.
 - [x] Unify completed-attempt reads, preserve owner-only access, and expose recoverable load failures; no schema changes.
