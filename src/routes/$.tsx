@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { SpaMount, spaHead } from "@/components/spa-host";
+import { spaHead } from "@/components/spa-host";
 
 /**
  * Catch-all route: every client-side path of the pre-built SPA (dashboard,
@@ -14,5 +14,5 @@ export const Route = createFileRoute("/$")({
       "EduQuiz Platform",
       "AI-powered learning and assessment for classrooms: quizzes, assignments and instant feedback.",
     ),
-  component: SpaMount,
+  component: () => null,
 });
